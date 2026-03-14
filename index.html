@@ -261,7 +261,8 @@
         <div class="flex justify-between items-center w-full xl:w-auto gap-4 flex-shrink-0">
             <!-- Brand -->
             <div class="flex flex-col min-w-0">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <img id="app-header-icon" src="" class="w-8 h-8 rounded-lg object-cover hidden shadow-sm border border-white/20" alt="App Icon">
                     <h1 id="app-title-display" class="font-extrabold text-xl sm:text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none truncate">Arts Events Manager</h1>
                 </div>
                 <div class="flex items-center gap-3 mt-1.5">
@@ -601,6 +602,19 @@
                 <div id="bg-upload-status" class="text-[10px] text-[#0A84FF] font-bold mt-2 text-center hidden"></div>
             </div>
 
+            <!-- App Icon Config -->
+            <div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-white/10 pb-2">App Icon</h3>
+                <div class="flex items-center gap-3">
+                    <label class="cursor-pointer bg-black/20 hover:bg-black/40 border border-white/10 text-white px-4 py-2.5 r-btn text-xs font-bold transition flex items-center justify-center flex-1 text-center">
+                        Upload Custom Icon
+                        <input type="file" class="hidden" accept="image/*" onchange="handleIconUpload(event)" id="icon-upload-input">
+                    </label>
+                    <button onclick="clearIcon()" class="bg-[#FF3B30]/10 hover:bg-[#FF3B30]/20 text-[#FF3B30] border border-[#FF3B30]/30 px-4 py-2.5 r-btn text-xs font-bold transition outline-none">Clear</button>
+                </div>
+                <div id="icon-upload-status" class="text-[10px] text-[#0A84FF] font-bold mt-2 text-center hidden"></div>
+            </div>
+
             <div>
                 <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-white/10 pb-2">Column Labels & Defaults</h3>
                 <div class="flex justify-between text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
@@ -677,6 +691,7 @@
 
     let appName = 'Arts Events Manager';
     let appBackgroundImage = localStorage.getItem('arts_app_bg') || '';
+    let appIconImage = localStorage.getItem('arts_app_icon') || '';
     let masterPasswordHash = ''; 
     let isUnlocked = false;
     
@@ -1660,7 +1675,7 @@
                 events: eventsData,
                 expenses: expensesData,
                 budgets: budgetData,
-                settings: { appName: appName, columnLabels: columnLabels, milestoneOffsets: milestoneOffsets, appBackgroundImage: appBackgroundImage }
+                settings: { appName: appName, columnLabels: columnLabels, milestoneOffsets: milestoneOffsets, appBackgroundImage: appBackgroundImage, appIconImage: appIconImage }
             });
             await _supabase.from('app_state').upsert({
                 id: 'master_index',
@@ -1705,6 +1720,11 @@
                         applyBackground(); 
                         changed = true; 
                     }
+                    if (data.settings.appIconImage !== undefined && appIconImage !== data.settings.appIconImage) {
+                        appIconImage = data.settings.appIconImage;
+                        applyIcon();
+                        changed = true;
+                    }
                 }
 
                 if (changed && isUnlocked) {
@@ -1717,12 +1737,32 @@
     function saveLocal(triggerSync = true) {
         localStorage.setItem('arts_current_year', currentYear);
         localStorage.setItem('arts_app_bg', appBackgroundImage);
+        localStorage.setItem('arts_app_icon', appIconImage);
         if (triggerSync) syncToCloud();
     }
 
     // ==============================================================
-    // 7. FILE UPLOADS / BACKGROUND
+    // 7. FILE UPLOADS / BACKGROUND / ICON
     // ==============================================================
+
+    window.clearIcon = function() {
+        if (isReadOnly) return;
+        appIconImage = '';
+        applyIcon();
+        saveLocal();
+    };
+
+    function applyIcon() {
+        const iconEl = document.getElementById('app-header-icon');
+        if (!iconEl) return;
+        if (appIconImage) {
+            iconEl.src = appIconImage;
+            iconEl.classList.remove('hidden');
+        } else {
+            iconEl.src = '';
+            iconEl.classList.add('hidden');
+        }
+    }
 
     window.clearBackground = function() {
         if (isReadOnly) return;
@@ -1808,6 +1848,37 @@
         if (url) {
             appBackgroundImage = url;
             applyBackground();
+            saveLocal();
+            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+        }
+    };
+
+    window.handleIconUpload = async function(e) {
+        if (isReadOnly) return;
+        let file = e.target.files[0];
+        const statusEl = document.getElementById('icon-upload-status');
+        if (!file) return;
+
+        if (statusEl) { 
+            statusEl.innerText = "Compressing & Uploading..."; 
+            statusEl.classList.remove('hidden'); 
+            statusEl.classList.replace('text-[#FF3B30]', 'text-[#0A84FF]');
+        }
+
+        file = await compressImage(file);
+
+        if (file.size > 5 * 1024 * 1024) {
+            if (statusEl) { statusEl.innerText = "File too large (>5MB)"; statusEl.classList.remove('hidden'); statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
+            return;
+        }
+        
+        const url = await uploadToDrive(file, (msg) => {
+            if (statusEl) statusEl.innerText = msg;
+        });
+        
+        if (url) {
+            appIconImage = url;
+            applyIcon();
             saveLocal();
             if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
         }
@@ -2229,6 +2300,7 @@
     
     // Ensure load
     applyBackground(); 
+    applyIcon();
     initApp();
     console.log("App Loaded - Pro Edition");
 
