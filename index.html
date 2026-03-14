@@ -231,9 +231,10 @@
 <div id="auth-screen" class="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-5 transition-opacity duration-500" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
     <div class="frosted r-card p-8 sm:p-10 w-full max-w-[420px] flex flex-col items-center shadow-2xl">
         
-        <!-- Minimalist Lock Icon -->
-        <div class="w-16 h-16 r-pill bg-white/5 border border-white/10 flex items-center justify-center mb-6 text-gray-400">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <!-- Minimalist Lock Icon OR Custom App Icon -->
+        <div id="lock-icon-container" class="w-20 h-20 r-pill bg-white/5 border border-white/10 flex items-center justify-center mb-6 text-gray-400 overflow-hidden shadow-xl">
+            <svg id="lock-svg-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <img id="lock-app-icon" src="" class="w-full h-full object-contain hidden p-2">
         </div>
 
         <!-- Gradient App Title -->
@@ -262,7 +263,7 @@
             <!-- Brand -->
             <div class="flex flex-col min-w-0">
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <img id="app-header-icon" src="" class="w-8 h-8 rounded-lg object-cover hidden shadow-sm border border-white/20" alt="App Icon">
+                    <img id="app-header-icon" src="" class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain hidden shadow-sm border border-white/20 bg-black/20 flex-shrink-0" alt="App Icon">
                     <h1 id="app-title-display" class="font-extrabold text-xl sm:text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none truncate">Arts Events Manager</h1>
                 </div>
                 <div class="flex items-center gap-3 mt-1.5">
@@ -776,8 +777,11 @@
     }
     
     function renderAppTitle() {
-        const el = document.getElementById('app-title-display');
-        if (el) el.innerText = appName;
+        const displayEl = document.getElementById('app-title-display');
+        const authEl = document.getElementById('auth-title');
+        
+        if (displayEl) displayEl.innerText = appName;
+        if (authEl) authEl.innerText = appName;
         document.title = `${appName} — Pro Edition`;
     }
 
@@ -1224,7 +1228,7 @@
 
             card.innerHTML = `
                 <div class="relative h-40 w-full overflow-hidden cursor-pointer group flex-shrink-0" onclick="openEventEditor('${ev.id}')">
-                    <img src="${bgImage}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
+                    <img src="${bgImage}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cover-img-${ev.id}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
                     <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                         <h3 class="font-bold text-xl text-white leading-tight pr-4 drop-shadow-md truncate">${ev.name}</h3>
@@ -1541,7 +1545,7 @@
             
             card.innerHTML = `
                 <div class="card-header group">
-                    <img src="${bgImage}" class="card-img" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
+                    <img src="${bgImage}" class="card-img cover-img-${ev.id}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
                     <div class="card-gradient-overlay flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                         ${ev.photosLink ? `<a href="${ev.photosLink}" target="_blank" class="bg-white/20 backdrop-blur-md text-white px-6 py-3 r-pill font-bold text-sm border border-white/30 transform scale-95 group-hover:scale-100 transition shadow-xl flex items-center gap-2">${Icons.folderOpen} Open Folder</a>` : ''}
                     </div>
@@ -1575,6 +1579,21 @@
             grid.appendChild(card);
         });
     }
+
+    window.updateEventPhoto = function(id, field, value) {
+        if (isReadOnly) return;
+        const ev = eventsData.find(e => e.id === id);
+        if (ev) {
+            ev[field] = value;
+            saveLocal();
+            if (field === 'coverImage') {
+                // Dynamically swap the image source to avoid re-rendering the whole DOM
+                document.querySelectorAll(`.cover-img-${id}`).forEach(img => {
+                    img.src = value;
+                });
+            }
+        }
+    };
 
     // ==============================================================
     // SYNC & CLOUD LOGIC
@@ -1754,13 +1773,17 @@
 
     function applyIcon() {
         const iconEl = document.getElementById('app-header-icon');
-        if (!iconEl) return;
+        const lockIconEl = document.getElementById('lock-app-icon');
+        const lockSvg = document.getElementById('lock-svg-icon');
+
         if (appIconImage) {
-            iconEl.src = appIconImage;
-            iconEl.classList.remove('hidden');
+            if(iconEl) { iconEl.src = appIconImage; iconEl.classList.remove('hidden'); iconEl.classList.add('block'); }
+            if(lockIconEl) { lockIconEl.src = appIconImage; lockIconEl.classList.remove('hidden'); lockIconEl.classList.add('block'); }
+            if(lockSvg) { lockSvg.classList.add('hidden'); }
         } else {
-            iconEl.src = '';
-            iconEl.classList.add('hidden');
+            if(iconEl) { iconEl.src = ''; iconEl.classList.add('hidden'); iconEl.classList.remove('block'); }
+            if(lockIconEl) { lockIconEl.src = ''; lockIconEl.classList.add('hidden'); lockIconEl.classList.remove('block'); }
+            if(lockSvg) { lockSvg.classList.remove('hidden'); }
         }
     }
 
@@ -1783,6 +1806,17 @@
             document.body.style.backgroundPosition = 'top left';
             document.body.style.backgroundAttachment = 'scroll';
         }
+    }
+
+    // Helper to preload images and prevent CDN 404 race conditions
+    function preloadImage(url, onSuccess) {
+        const img = new Image();
+        img.onload = () => onSuccess(url);
+        img.onerror = () => {
+            // Give CDN a second to distribute, then fallback
+            setTimeout(() => onSuccess(url), 1500); 
+        };
+        img.src = url;
     }
 
     async function compressImage(file) {
@@ -1812,11 +1846,12 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
+                    // Compress to WEBP to preserve background transparency for logos
                     canvas.toBlob((blob) => {
-                        const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-                        const newFile = new File([blob], newFileName, { type: 'image/jpeg', lastModified: Date.now() });
+                        const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                        const newFile = new File([blob], newFileName, { type: 'image/webp', lastModified: Date.now() });
                         resolve(newFile);
-                    }, 'image/jpeg', 0.7); 
+                    }, 'image/webp', 0.8); 
                 };
             };
         });
@@ -1838,6 +1873,7 @@
 
         if (file.size > 5 * 1024 * 1024) {
             if (statusEl) { statusEl.innerText = "File too large (>5MB)"; statusEl.classList.remove('hidden'); statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
+            e.target.value = '';
             return;
         }
         
@@ -1846,11 +1882,15 @@
         });
         
         if (url) {
-            appBackgroundImage = url;
-            applyBackground();
-            saveLocal();
-            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+            if (statusEl) statusEl.innerText = "Finalizing...";
+            preloadImage(url, (safeUrl) => {
+                appBackgroundImage = safeUrl;
+                applyBackground();
+                saveLocal();
+                if (statusEl) { statusEl.innerText = "Done!"; setTimeout(() => statusEl.classList.add('hidden'), 2000); }
+            });
         }
+        e.target.value = ''; // Reset input to allow re-uploads
     };
 
     window.handleIconUpload = async function(e) {
@@ -1869,6 +1909,7 @@
 
         if (file.size > 5 * 1024 * 1024) {
             if (statusEl) { statusEl.innerText = "File too large (>5MB)"; statusEl.classList.remove('hidden'); statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
+            e.target.value = '';
             return;
         }
         
@@ -1877,11 +1918,15 @@
         });
         
         if (url) {
-            appIconImage = url;
-            applyIcon();
-            saveLocal();
-            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+            if (statusEl) statusEl.innerText = "Finalizing...";
+            preloadImage(url, (safeUrl) => {
+                appIconImage = safeUrl;
+                applyIcon();
+                saveLocal();
+                if (statusEl) { statusEl.innerText = "Done!"; setTimeout(() => statusEl.classList.add('hidden'), 2000); }
+            });
         }
+        e.target.value = ''; // Reset input
     };
 
     window.handleCoverImageUpload = async function(e, id) {
@@ -1896,6 +1941,7 @@
 
         if (file.size > 5 * 1024 * 1024) {
             if (statusEl) { statusEl.innerText = "File too large (>5MB)"; statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
+            e.target.value = '';
             return;
         }
 
@@ -1904,9 +1950,13 @@
         });
         
         if (url) {
-            updateEventPhoto(id, 'coverImage', url);
-            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+            if (statusEl) statusEl.innerText = "Finalizing...";
+            preloadImage(url, (safeUrl) => {
+                updateEventPhoto(id, 'coverImage', safeUrl);
+                if (statusEl) { statusEl.innerText = "Done!"; setTimeout(() => statusEl.classList.add('hidden'), 2000); }
+            });
         }
+        e.target.value = ''; // Reset input
     };
 
     async function uploadToDrive(file, uiCallback) {
