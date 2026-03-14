@@ -1820,15 +1820,16 @@
     }
 
     async function compressImage(file) {
-        if (!file.type.startsWith('image/')) return file; 
+        // Prevent crashes if file.type is undefined, and skip non-images (PDFs)
+        if (!file || !file.type || !file.type.startsWith('image/')) return file; 
         
         return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = event => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            
+            img.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                try {
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 1920;
                     const MAX_HEIGHT = 1080;
@@ -1848,12 +1849,26 @@
                     
                     // Compress to WEBP to preserve background transparency for logos
                     canvas.toBlob((blob) => {
-                        const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
-                        const newFile = new File([blob], newFileName, { type: 'image/webp', lastModified: Date.now() });
-                        resolve(newFile);
+                        if (blob) {
+                            const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                            const newFile = new File([blob], newFileName, { type: 'image/webp', lastModified: Date.now() });
+                            resolve(newFile);
+                        } else {
+                            resolve(file); // Fallback if blob fails
+                        }
                     }, 'image/webp', 0.8); 
-                };
+                } catch (err) {
+                    console.error("Compression failed:", err);
+                    resolve(file); // Fallback if canvas crashes
+                }
             };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(file); // Fallback for HEIC or unsupported camera formats
+            };
+            
+            img.src = objectUrl;
         });
     }
 
@@ -2001,6 +2016,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     ${f.status === 'uploading' ? '<span class="text-xs text-[#BF5AF2] font-bold animate-pulse">Uploading...</span>' : ''}
+                    ${f.status === 'error' ? '<span class="text-xs text-[#FF3B30] font-bold">Failed</span>' : ''}
                     ${!isReadOnly ? `<button onclick="removeFile('${catId}', '${f.id}')" class="text-[#FF3B30] hover:text-white p-2 bg-transparent border-none cursor-pointer flex items-center justify-center transition">${Icons.close}</button>` : ''}
                 </div>
             </div>
@@ -2030,6 +2046,13 @@
                 </div>
             </div>
         `).join('');
+    }
+
+    function renderFilesTab() {
+        const container = document.getElementById('file-upload-container');
+        if(!container) return;
+        container.innerHTML = renderFileCategories();
+        attachFileHandlers();
     }
 
     function attachFileHandlers() {
