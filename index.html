@@ -3,108 +3,308 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Arts Events Manager</title>
-    <!-- Tailwind CSS -->
+    <title>Arts Events Manager — Pro Edition</title>
+    <!-- Tailwind CSS for Layouting -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2pdf.js for PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        body { background: #f1f5f9; -webkit-tap-highlight-color: transparent; }
-        .modal-bg { background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
-        .scroll-hide::-webkit-scrollbar { display: none; }
-        tr { transition: background-color 0.2s ease; }
+        :root {
+            /* Theme Colors */
+            --bg-dark: #000000;
+            --glass-surface: rgba(20, 20, 20, 0.45); 
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+            
+            /* Gradient Accents */
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
+            --gradient-hover: linear-gradient(135deg, #007AFF, #AF52DE);
+            --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
+            --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
+            --gradient-nolan: linear-gradient(135deg, #FFD60A, #FF9F0A);
+            
+            /* Modern Rounding */
+            --radius-card: 28px;
+            --radius-pill: 100px;
+            --radius-btn: 16px;
+            --blur: 40px;
+            
+            /* Font */
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Base Setup */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            margin: 0;
+            font-family: var(--font-stack);
+            color: var(--text-main);
+            background-color: var(--bg-dark);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            min-height: 100vh;
+            padding-bottom: 60px;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar Utilities */
+        ::-webkit-scrollbar { width: 8px; height: 8px;}
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; border: 2px solid var(--bg-dark); }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Unified Rounding Utility Classes */
+        .r-card { border-radius: var(--radius-card); }
+        .r-btn { border-radius: var(--radius-btn); }
+        .r-pill { border-radius: var(--radius-pill); }
+
+        .frosted {
+            background: var(--glass-surface);
+            backdrop-filter: blur(var(--blur)) saturate(150%);
+            -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .app-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
         
-        /* Loading Spinner */
+        .app-container.unlocked {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Top Navigation Components */
+        .brand h1 {
+            font-size: 1.4rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
+            background: var(--gradient-accent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-stat { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; display: flex; align-items: center; gap: 8px;}
+        
         .loader {
-            border: 2px solid #e2e8f0;
-            border-top: 2px solid #9333ea;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: 2px solid #0A84FF;
             border-radius: 50%;
-            width: 14px;
-            height: 14px;
+            width: 12px; height: 12px;
             animation: spin 1s linear infinite;
-            display: inline-block;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Tab Active State */
-        .nav-tab.active { background-color: #f3e8ff; color: #7e22ce; border-color: #d8b4fe; }
-        
-        /* Aspect Ratio for Cover Images */
-        .aspect-video { aspect-ratio: 16 / 9; }
-        
-        /* PDF Generation Helper Class */
-        .pdf-hide { display: none !important; }
 
-        /* Read Only Styles */
-        .read-only-input { background-color: #f8fafc; color: #64748b; cursor: not-allowed; }
-
-        /* Mobile adjustments for inputs to prevent zoom */
-        input, select, textarea {
-            font-size: 16px; /* Base size for mobile */
+        /* Segmented Tabs */
+        .nav-tab { cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); outline: none; }
+        .nav-tab:hover { background-color: rgba(255, 255, 255, 0.05); color: #fff; }
+        .nav-tab.active-tab { background-color: rgba(255, 255, 255, 0.15); color: #fff; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
+        
+        .btn-action-icon {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            height: 46px; width: 46px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            flex-shrink: 0;
         }
-        @media (min-width: 768px) {
-            input, select, textarea {
-                font-size: 0.875rem; /* text-sm for desktop */
-            }
+        .btn-action-icon:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+
+        .btn-stats { 
+            background: var(--gradient-accent); border: none; padding: 0 24px; 
+            box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); color: white; 
+            height: 46px; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .btn-stats:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
+
+        /* General Dark Inputs */
+        input, select, textarea {
+            background: rgba(0,0,0,0.3); color: white;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            outline: none; transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: #0A84FF; box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2); background: rgba(0,0,0,0.5);}
+        select option { background: #111; color: #fff; }
+
+        /* Tables */
+        .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px;}
+        table { width: 100%; text-align: left; border-collapse: collapse; }
+        thead { background: rgba(255,255,255,0.05); }
+        th { padding: 18px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--glass-border); white-space: nowrap; user-select: none;}
+        th.sortable:hover { color: #fff; }
+        td { padding: 18px 20px; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
+        tr:hover td { background: rgba(255,255,255,0.03); }
+
+        /* Cards */
+        .card {
+            display: flex; flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        .card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.3); }
+        .card-header { position: relative; height: 180px; width: 100%; overflow: hidden; border-bottom: 1px solid var(--glass-border); }
+        .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+        .card:hover .card-img { transform: scale(1.08); }
+        .card-gradient-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%); }
+        .card-body { padding: 24px; display: flex; flex-direction: column; flex: 1; }
+
+        /* Calendar Grid */
+        .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+        .cal-cell { min-height: 120px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; transition: 0.2s; overflow: hidden; }
+        .cal-cell:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
+        .cal-cell.faded { opacity: 0.3; }
+        .cal-event { background: var(--gradient-accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 4px 10px rgba(10, 132, 255, 0.3);}
+
+        /* Modal Base */
+        .modal { position: fixed; inset: 0; z-index: 999; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .modal.hidden { display: none !important; }
+        .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);}
+        
+        .modal-content {
+            position: relative; width: 100%; max-width: 850px; max-height: 90vh;
+            background: var(--glass-surface);
+            backdrop-filter: blur(var(--blur)) saturate(150%);
+            -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+            border: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+        }
+        .modal-header { padding: 24px 32px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .modal-body { padding: 32px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
+        .modal-footer { padding: 24px 32px; border-top: 1px solid var(--glass-border); flex-shrink: 0;}
+
+        .btn-modal { width: 100%; padding: 16px; font-size: 1rem; font-weight: 700; cursor: pointer; border: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); background: var(--gradient-accent); color: white; }
+        .btn-modal:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4); }
+
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; white-space: nowrap;}
+        .badge-fire { background: var(--gradient-fire); }
+        .badge-ok { background: var(--gradient-success); }
+        .badge-warn { background: var(--gradient-nolan); color: #000; }
+
+        .read-only-input { opacity: 0.6; cursor: not-allowed; }
+
+        @media(max-width: 800px) {
+            .app-container { padding: 0 10px; }
+            .topbar { position: relative; top: 0; flex-direction: column; gap: 20px; padding: 24px; margin-top: 10px; border-radius: 20px; }
+            .controls { width: 100%; justify-content: center; }
+            .control-item { padding: 0 16px; font-size: 0.85rem; }
+            .modal { padding: 10px; }
+            .modal-content { max-height: 95vh; border-radius: 24px; }
+            .modal-header, .modal-footer { padding: 16px 20px; }
+            .modal-body { padding: 20px; }
+            .cal-grid { display: flex; flex-direction: column; }
+            .cal-cell { min-height: 60px; }
         }
     </style>
 </head>
 
-<body class="font-sans text-slate-800 p-2 md:p-4 pb-20">
+<body>
 
 <!-- ====================================================== -->
-<!-- APP CONTAINER -->
+<!-- AUTH / LOCK SCREEN -->
 <!-- ====================================================== -->
-<div id="app-container" class="max-w-[1400px] mx-auto">
+<div id="auth-screen" class="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-5 transition-opacity duration-500" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));">
+    <div class="frosted r-card p-10 w-full max-w-[400px] flex flex-col items-center text-center shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10">
+        <div class="w-20 h-20 r-pill flex items-center justify-center mb-6 text-white shadow-2xl border border-white/20" style="background: var(--gradient-accent);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2" id="auth-title">App Locked</h2>
+        <p class="text-sm text-gray-400 mb-8" id="auth-subtitle">Enter your master password.</p>
+        
+        <input type="password" id="auth-password" class="w-full px-5 py-4 r-btn text-center text-xl tracking-widest mb-6 bg-black/40 border-white/10 focus:border-[#0A84FF] transition-all" placeholder="••••••••" onkeypress="if(event.key==='Enter') submitAuth()">
+        
+        <button onclick="submitAuth()" class="w-full text-white py-4 r-btn font-bold transition-all text-lg hover:-translate-y-0.5 shadow-[0_10px_25px_rgba(10,132,255,0.3)]" style="background: var(--gradient-accent);">
+            Unlock Dashboard
+        </button>
+    </div>
+</div>
+
+<div class="app-container" id="app-container">
 
     <!-- TOP BAR -->
-    <div class="bg-white/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-slate-200 mb-4 md:mb-6 flex flex-col lg:flex-row justify-between gap-4 items-center">
-        
-        <div class="flex flex-col items-center lg:items-start w-full lg:w-auto">
-            <!-- APP TITLE -->
-            <h1 id="app-title-display" class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-900">
-                🎨 Arts Events Manager
-            </h1>
+    <div class="frosted r-card mb-8 mt-4 sticky top-4 z-50 shadow-2xl w-full mx-auto overflow-hidden">
+        <div class="flex flex-row items-center gap-5 md:gap-6 px-5 md:px-6 py-4 overflow-x-auto hide-scrollbar w-full">
             
-            <!-- Sync Status -->
-            <div class="text-xs font-medium text-slate-500 mt-1 flex items-center gap-2 px-1">
-                <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-300"></span>
-                <span id="sync-text">Connecting...</span>
-            </div>
-        </div>
-
-        <!-- Navigation & Actions -->
-        <div class="flex flex-col md:flex-row flex-wrap justify-center gap-3 items-center w-full lg:w-auto">
-            
-            <!-- View Switcher -->
-            <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 w-full md:w-auto">
-                <button onclick="switchView('events')" id="nav-events" class="nav-tab active flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-bold text-slate-600 transition">Events</button>
-                <button onclick="switchView('budget')" id="nav-budget" class="nav-tab flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-bold text-slate-600 transition">Budget</button>
-                <button onclick="switchView('photos')" id="nav-photos" class="nav-tab flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-bold text-slate-600 transition">Photos</button>
+            <!-- Brand area -->
+            <div class="flex flex-col gap-1 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <h1 id="app-title-display" class="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none">Arts Events Manager</h1>
+                    <!-- Year Dropdown -->
+                    <div class="relative flex items-center">
+                        <select id="year-selector" onchange="handleYearChange(this.value)" class="bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 border border-[#0A84FF]/20 r-pill pl-3 pr-8 py-1.5 text-xs font-bold text-[#0A84FF] outline-none cursor-pointer transition appearance-none shadow-sm">
+                            <!-- Populated by JS -->
+                        </select>
+                        <div class="absolute right-3 pointer-events-none text-[#0A84FF]">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-[0.85rem] text-gray-400 font-medium flex items-center gap-2 mt-1">
+                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                    <span id="sync-text">Connecting...</span>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2 w-full md:w-auto justify-center">
+            <!-- Flexible Spacer (pushes everything right on desktop) -->
+            <div class="flex-1 min-w-[10px]"></div>
+
+            <!-- Segmented Navigation Tabs -->
+            <div class="flex bg-black/40 p-1.5 r-pill border border-white/10 flex-shrink-0">
+                <button onclick="switchView('events')" id="nav-events" class="nav-tab active-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Events</button>
+                <button onclick="switchView('calendar')" id="nav-calendar" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Calendar</button>
+                <button onclick="switchView('budget')" id="nav-budget" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Budget</button>
+                <button onclick="switchView('photos')" id="nav-photos" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Photos</button>
+            </div>
+
+            <!-- Action Buttons Group (Utilities) -->
+            <div class="flex items-center gap-2.5 flex-shrink-0">
+                
                 <!-- Total Budget Display -->
-                <div class="bg-green-50 px-4 py-2 rounded-lg border border-green-100 min-w-[100px] text-center lg:text-left flex-1 md:flex-none">
-                    <p class="text-[10px] text-green-600 font-bold uppercase tracking-wider">Yearly Budget</p>
-                    <p id="total-budget-display" class="text-lg font-bold text-green-700">$0</p>
+                <div class="flex items-center gap-2 px-4 py-2 r-pill border border-white/10 bg-black/20 h-[46px]">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider hidden sm:block">Budget</p>
+                    <p id="total-budget-display" class="text-lg font-bold text-white">$0</p>
                 </div>
 
                 <!-- Settings -->
-                <button onclick="openSettings()" class="p-2.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition bg-white border border-slate-200" title="Settings">
-                    ⚙️
+                <button onclick="openSettings()" class="btn-action-icon" title="Settings">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </button>
+                
+                <!-- Download CSV -->
+                <button onclick="exportToCSV()" class="btn-action-icon" title="Export to CSV">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                 </button>
 
                 <!-- Download PDF -->
-                <button onclick="downloadPDF()" class="p-2.5 rounded-lg text-slate-500 hover:text-purple-700 hover:bg-purple-50 transition bg-white border border-slate-200" title="Download Full Report">
-                    📥
+                <button onclick="downloadPDF()" class="btn-action-icon" title="Download Full Report PDF">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
-
+                
                 <!-- Add Event -->
-                <button onclick="openEventEditor()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-md transition transform active:scale-95 flex items-center gap-2 whitespace-nowrap">
-                    <span>+</span> <span class="hidden md:inline">New Event</span>
+                <button onclick="openEventEditor()" class="btn-stats r-pill flex items-center justify-center gap-2 flex-shrink-0 ml-1">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>New Event</span>
                 </button>
+                
+                <!-- Scroll Spacer so the right padding isn't cut off inside the scroll container -->
+                <div class="w-2 flex-shrink-0"></div>
             </div>
         </div>
     </div>
@@ -112,161 +312,231 @@
     <!-- ====================================================== -->
     <!-- VIEW: EVENTS TABLE -->
     <!-- ====================================================== -->
-    <div id="view-events" class="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="overflow-x-auto scroll-hide">
-            <table class="w-full text-sm text-left border-collapse" id="events-table-main">
-                <thead class="bg-slate-900 text-slate-100 uppercase text-xs font-bold tracking-wider">
-                    <tr id="table-header-row">
-                        <!-- Headers injected via JS -->
-                    </tr>
-                </thead>
-                <tbody id="events-body" class="divide-y divide-slate-100">
-                    <!-- Rows rendered via JS -->
-                </tbody>
-            </table>
+    <div id="view-events" class="mb-10">
+        
+        <!-- Needs Attention Widget -->
+        <div id="upcoming-widget" class="mb-8 frosted r-card p-6 hidden">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-8 h-8 rounded-full bg-[#FF3B30]/20 text-[#FF3B30] flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <h3 class="font-bold text-lg text-white">Needs Attention</h3>
+            </div>
+            <div id="upcoming-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Local Events Header -->
+        <div class="flex items-center gap-5 mb-6 px-1">
+            <h2 class="font-bold text-xl text-white">Event Dashboard</h2>
+            <div id="events-view-toggles" class="flex items-center bg-black/20 r-pill border border-white/10 p-1 h-[42px]">
+                <button onclick="setEventsView('list')" id="btn-view-list" class="px-4 h-full r-pill text-sm font-bold bg-white/10 text-white transition flex items-center justify-center outline-none" title="List View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                </button>
+                <button onclick="setEventsView('card')" id="btn-view-card" class="px-4 h-full r-pill text-sm font-bold bg-transparent text-gray-400 hover:text-white transition flex items-center justify-center outline-none" title="Grid View">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div id="events-list-view" class="frosted r-card overflow-hidden">
+            <div class="table-container">
+                <table id="events-table-main">
+                    <thead>
+                        <tr id="table-header-row">
+                            <!-- Headers injected via JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="events-body">
+                        <!-- Rows rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card View -->
+        <div id="events-card-view" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards injected via JS -->
         </div>
         
         <!-- Empty State -->
-        <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-slate-400">
-            <div class="text-4xl mb-2">📅</div>
-            <p>No events found. Create one to get started!</p>
+        <div id="empty-state" class="hidden frosted r-card flex-col items-center justify-center py-24 text-gray-500">
+            <div class="mb-4 opacity-50 text-gray-400">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <p class="font-medium text-lg">No events found. Create one to get started!</p>
+        </div>
+    </div>
+
+    <!-- ====================================================== -->
+    <!-- VIEW: CALENDAR -->
+    <!-- ====================================================== -->
+    <div id="view-calendar" class="hidden mb-10">
+        <div class="frosted r-card p-6 md:p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 id="calendar-month-display" class="font-bold text-2xl text-white">Month Year</h2>
+                <div class="flex items-center gap-3">
+                    <button onclick="changeMonth(-1)" class="w-10 h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button onclick="changeMonth(1)" class="w-10 h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="cal-grid text-center mb-3 hidden md:grid">
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sun</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mon</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tue</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Wed</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Thu</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Fri</div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sat</div>
+            </div>
+            
+            <div id="calendar-grid" class="cal-grid">
+                <!-- Cells injected via JS -->
+            </div>
         </div>
     </div>
 
     <!-- ====================================================== -->
     <!-- VIEW: BUDGET MANAGER -->
     <!-- ====================================================== -->
-    <div id="view-budget" class="hidden space-y-6">
+    <div id="view-budget" class="hidden space-y-6 mb-10">
         
-        <!-- 1. Monthly Budget Overview -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="budget-overview-card">
-            <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition" onclick="toggleBudgetBreakdown()">
-                <h2 class="font-bold text-slate-800 flex items-center gap-2">
-                    <span id="budget-caret" class="transform transition-transform duration-200 text-slate-400">▼</span>
-                    Monthly Budget Breakdown
-                </h2>
-                <span class="text-xs text-slate-500 bg-white px-2 py-1 rounded border">Fiscal Year: July - June</span>
+        <!-- 1. Event Financials Table -->
+        <div class="frosted r-card overflow-hidden" id="event-performance-card">
+            <div class="p-6 border-b border-white/10">
+                <h2 class="font-bold text-xl">Event Financial Performance</h2>
             </div>
-            
-            <div id="budget-breakdown-content" class="transition-all duration-300">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
-                            <tr>
-                                <th class="px-4 py-2">Month</th>
-                                <th class="px-4 py-2 w-[150px]">Allocated</th>
-                                <th class="px-4 py-2 text-blue-600">Used</th>
-                                <th class="px-4 py-2 text-right">Remaining</th>
-                                <th class="px-4 py-2 w-[50px] action-col"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="budget-months-body" class="divide-y divide-slate-5">
-                            <!-- Monthly rows injected here -->
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Add Month Button -->
-                <div class="p-3 bg-slate-50 border-t border-slate-100 action-col" id="add-month-container">
-                    <button onclick="addBudgetMonth()" class="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
-                        <span class="text-lg leading-none">+</span> Add Month
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- 2. Expense Entry Form (Hidden in PDF) -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 action-col" id="expense-form-card">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <span class="bg-purple-100 text-purple-700 p-1 rounded">💸</span> Add Expense
-                </h3>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Expense Name</label>
-                        <input id="exp-name" class="w-full px-3 py-2 border border-slate-300 rounded-lg" placeholder="e.g. Pizza for Cast">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cost ($)</label>
-                            <input id="exp-cost" type="number" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
-                            <input id="exp-date" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Budget Month</label>
-                            <select id="exp-month" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
-                                <!-- Months injected here -->
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
-                            <select id="exp-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
-                                <option value="General">General</option>
-                                <option value="Food">Food</option>
-                                <option value="Transport">Transport</option>
-                                <option value="Decor">Decor</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Link to Event</label>
-                        <select id="exp-event" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
-                            <option value="">-- General Expense --</option>
-                            <!-- Events injected here -->
-                        </select>
-                    </div>
-                    <button onclick="addExpense()" class="w-full mt-2 bg-slate-800 text-white py-3 md:py-2.5 rounded-lg font-medium hover:bg-slate-900 transition">
-                        Add Expense
-                    </button>
-                </div>
-            </div>
-
-            <!-- 3. Recent Expenses List -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[420px]" id="expenses-list-card">
-                <div class="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 class="font-bold text-slate-800">Recent Expenses</h3>
-                </div>
-                <div class="overflow-y-auto flex-1 p-2 space-y-2" id="expenses-list">
-                    <!-- Expenses list injected here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. Event Financials Table -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="event-performance-card">
-            <div class="p-4 border-b border-slate-100 bg-slate-50">
-                <h2 class="font-bold text-slate-800">Event Financial Performance</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-100 text-slate-600 text-xs uppercase">
+            <div class="table-container">
+                <table>
+                    <thead>
                         <tr>
-                            <th class="px-4 py-2">Event Name</th>
-                            <th class="px-4 py-2">Total Cost</th>
-                            <th class="px-4 py-2">Food Cost</th>
-                            <th class="px-4 py-2">Attendance</th>
-                            <th class="px-4 py-2">Cost / Student</th>
+                            <th class="min-w-[200px] !cursor-default">Event Name</th>
+                            <th class="!cursor-default">Total Cost</th>
+                            <th class="!cursor-default">Food Cost</th>
+                            <th class="w-[150px] !cursor-default">Attendance</th>
+                            <th class="!cursor-default">Cost / Student</th>
                         </tr>
                     </thead>
-                    <tbody id="event-financials-body" class="divide-y divide-slate-5">
+                    <tbody id="event-financials-body">
                         <!-- Rows injected via JS -->
                     </tbody>
                 </table>
             </div>
         </div>
 
+        <!-- 2. Monthly Budget Overview -->
+        <div class="frosted r-card overflow-hidden" id="budget-overview-card">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center cursor-pointer transition hover:bg-white/5 outline-none" onclick="toggleBudgetBreakdown()">
+                <h2 class="font-bold text-xl flex items-center gap-3">
+                    <span id="budget-caret" class="transform transition-transform duration-200 text-gray-400 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                    Monthly Budget Breakdown
+                </h2>
+                <span class="text-xs text-gray-400 bg-black/40 px-4 py-2 r-pill border border-white/10 font-bold tracking-wider uppercase">FY: July - June</span>
+            </div>
+            
+            <div id="budget-breakdown-content" class="transition-all duration-300">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="w-[150px] !cursor-default">Month</th>
+                                <th class="w-[200px] !cursor-default">Allocated</th>
+                                <th class="text-[#0A84FF] !cursor-default">Used</th>
+                                <th class="text-right !cursor-default">Remaining</th>
+                                <th class="w-[80px] text-center action-col !cursor-default">Act</th>
+                            </tr>
+                        </thead>
+                        <tbody id="budget-months-body">
+                            <!-- Monthly rows injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Add Month Button -->
+                <div class="p-5 border-t border-white/10 action-col text-center" id="add-month-container">
+                    <button onclick="addBudgetMonth()" class="text-sm font-bold text-[#BF5AF2] hover:text-white transition flex items-center gap-2 justify-center w-full">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Custom Month
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 3. Expense Entry Form -->
+            <div class="frosted r-card p-8 action-col flex flex-col justify-between" id="expense-form-card">
+                <div>
+                    <h3 class="font-bold text-xl mb-6 flex items-center gap-3">
+                        <span class="bg-black/20 text-white p-2.5 r-btn border border-white/10 flex items-center justify-center">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        </span> 
+                        Add Expense
+                    </h3>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Expense Name</label>
+                            <input id="exp-name" class="w-full px-4 py-3 r-btn">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Cost ($)</label>
+                                <input id="exp-cost" type="number" step="0.01" class="w-full px-4 py-3 r-btn">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Date</label>
+                                <input id="exp-date" type="date" class="w-full px-4 py-3 r-btn">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Budget Month</label>
+                                <select id="exp-month" class="w-full px-4 py-3 appearance-none r-btn"></select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Category</label>
+                                <select id="exp-category" class="w-full px-4 py-3 appearance-none r-btn">
+                                    <option value="General">General</option>
+                                    <option value="Food">Food</option>
+                                    <option value="Transport">Transport</option>
+                                    <option value="Decor">Decor</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Link to Event</label>
+                            <select id="exp-event" class="w-full px-4 py-3 appearance-none r-btn"></select>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="addExpense()" class="w-full mt-8 bg-white/10 border border-white/20 text-white py-4 r-btn font-bold hover:bg-white/20 transition text-lg shadow-lg">
+                    Submit Expense
+                </button>
+            </div>
+
+            <!-- 4. Recent Expenses List -->
+            <div class="frosted r-card flex flex-col h-[600px]" id="expenses-list-card">
+                <div class="p-6 border-b border-white/10">
+                    <h3 class="font-bold text-xl">Recent Expenses</h3>
+                </div>
+                <div class="overflow-y-auto flex-1 p-5 space-y-4" id="expenses-list">
+                    <!-- Expenses list injected here -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ====================================================== -->
     <!-- VIEW: PHOTOS MANAGER -->
     <!-- ====================================================== -->
-    <div id="view-photos" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="photos-grid">
+    <div id="view-photos" class="hidden mb-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8" id="photos-grid">
             <!-- Cards injected here -->
         </div>
     </div>
@@ -276,51 +546,57 @@
 <!-- ====================================================== -->
 <!-- SETTINGS MODAL -->
 <!-- ====================================================== -->
-<div id="settings-modal" class="hidden fixed inset-0 modal-bg flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto flex flex-col">
-        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl shrink-0">
-            <h2 class="text-lg font-bold text-slate-800">⚙️ Settings</h2>
-            <button class="text-slate-400 hover:text-slate-600 font-bold px-2 py-2" onclick="closeSettings()">✕</button>
+<div id="settings-modal" class="hidden modal">
+    <div class="modal-bg" onclick="closeSettings()"></div>
+    <div class="modal-content r-card" style="max-width: 550px;">
+        <div class="modal-header">
+            <h2 class="text-2xl font-bold flex items-center gap-3">
+                <svg class="text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                App Settings
+            </h2>
+            <button class="text-gray-400 hover:text-white bg-transparent border-none cursor-pointer p-2 flex items-center justify-center transition outline-none" onclick="closeSettings()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
         </div>
-        <div class="p-6 space-y-6 grow overflow-y-auto">
+        <div class="modal-body space-y-8">
+            <!-- App Password Config -->
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Master Password Lock</label>
+                <input type="text" id="setting-app-password" class="w-full px-5 py-4 r-btn text-base" placeholder="Leave blank to disable lock screen...">
+                <p class="text-[10px] text-gray-500 mt-2">Setting this will require a password to access the app on any device.</p>
+            </div>
+
             <!-- App Name Config -->
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Application Name</label>
-                <input id="setting-app-name" class="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-200 outline-none" placeholder="Arts Events Manager">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Application Name</label>
+                <input id="setting-app-name" class="w-full px-5 py-4 r-btn text-base" placeholder="Arts Events Manager">
+            </div>
+
+            <!-- App Background Config -->
+            <div>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-white/10 pb-2">App Background</h3>
+                <div class="flex items-center gap-3">
+                    <label class="cursor-pointer bg-black/20 hover:bg-black/40 border border-white/10 text-white px-4 py-2.5 r-btn text-xs font-bold transition flex items-center justify-center flex-1">
+                        Upload Custom Background
+                        <input type="file" class="hidden" accept="image/*" onchange="handleBackgroundUpload(event)" id="bg-upload-input">
+                    </label>
+                    <button onclick="clearBackground()" class="bg-[#FF3B30]/10 hover:bg-[#FF3B30]/20 text-[#FF3B30] border border-[#FF3B30]/30 px-4 py-2.5 r-btn text-xs font-bold transition">Clear</button>
+                </div>
+                <div id="bg-upload-status" class="text-[10px] text-[#0A84FF] font-bold mt-2 text-center hidden"></div>
             </div>
 
             <div>
-                <h3 class="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">Column Labels</h3>
-                <div id="column-label-editor" class="space-y-3"></div>
-            </div>
-
-            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Troubleshooting</h3>
-                <button onclick="manualForceSync()" class="w-full bg-white border border-slate-300 text-slate-700 py-3 md:py-2 rounded-lg text-sm font-medium hover:bg-slate-50 flex justify-center items-center gap-2">
-                    🔄 Force Cloud Sync Now
-                </button>
-                
-                <button onclick="resetBudgetDefaults()" class="mt-2 w-full bg-white border border-red-200 text-red-600 py-3 md:py-2 rounded-lg text-sm font-medium hover:bg-red-50 flex justify-center items-center gap-2">
-                    ⚠️ Reset Budget Months
-                </button>
-            </div>
-
-            <!-- Archive Zone -->
-            <div class="bg-red-50 p-4 rounded-lg border border-red-100" id="admin-archive-zone">
-                <h3 class="text-xs font-bold text-red-600 uppercase mb-2">Admin Actions</h3>
-                <button onclick="archiveYear()" class="w-full bg-white border border-red-300 text-red-700 py-3 md:py-2 rounded-lg text-sm font-bold hover:bg-red-50 flex justify-center items-center gap-2 shadow-sm">
-                    📦 Archive & Start New Year
-                </button>
-                <p class="text-[10px] text-red-400 mt-2">
-                    Moves current data to archived sheets (e.g. "Events_2024") and resets the app to blank.
-                </p>
+                <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-white/10 pb-2">Column Labels & Defaults</h3>
+                <div class="flex justify-between text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-3 px-1">
+                    <span>Milestone Label</span>
+                    <span class="mr-2">Weeks Out</span>
+                </div>
+                <div id="column-label-editor" class="space-y-4"></div>
             </div>
         </div>
         
-        <div class="p-4 border-t border-slate-100 shrink-0" id="settings-save-area">
-            <button onclick="saveSettings()" class="w-full bg-slate-900 text-white py-3 rounded-xl hover:bg-slate-800 font-medium">
-                Save Changes
-            </button>
+        <div class="modal-footer">
+            <button onclick="saveSettings()" class="btn-modal r-btn">Save Changes</button>
         </div>
     </div>
 </div>
@@ -328,31 +604,32 @@
 <!-- ====================================================== -->
 <!-- EVENT MODAL -->
 <!-- ====================================================== -->
-<div id="event-modal" class="hidden fixed inset-0 modal-bg flex items-center justify-center z-50 p-2 md:p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+<div id="event-modal" class="hidden modal">
+    <div class="modal-bg" onclick="closeEventModal()"></div>
+    <div class="modal-content r-card">
         
         <!-- Modal Header -->
-        <div class="p-4 md:p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-start shrink-0">
-            <div>
-                <h2 id="event-modal-title" class="text-lg md:text-xl font-bold text-slate-800">Event Details</h2>
-                <div class="flex gap-4 mt-3">
-                    <button id="tab-details" onclick="switchTab('details')" class="text-sm font-medium pb-1 border-b-2 border-purple-600 text-purple-600 transition">Details</button>
-                    <button id="tab-files" onclick="switchTab('files')" class="text-sm font-medium pb-1 text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition">Notes & Files</button>
-                </div>
+        <div class="modal-header flex-col items-start gap-5">
+            <div class="flex justify-between items-center w-full">
+                <h2 id="event-modal-title" class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2]">Event Details</h2>
+                <button onclick="closeEventModal()" class="text-gray-400 hover:text-white bg-transparent border-none cursor-pointer p-1 flex items-center justify-center transition outline-none">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
             </div>
-            <button onclick="closeEventModal()" class="text-slate-400 hover:text-slate-600 p-2 text-xl font-bold leading-none">✕</button>
+            <div class="flex gap-3 w-full">
+                <button id="tab-details" onclick="switchTab('details')" class="flex-1 py-3 text-sm font-bold r-btn transition border border-[#0A84FF] bg-[#0A84FF]/10 text-[#0A84FF] outline-none">Details</button>
+                <button id="tab-files" onclick="switchTab('files')" class="flex-1 py-3 text-sm font-bold r-btn transition border border-transparent text-gray-400 hover:bg-black/20 hover:text-white outline-none">Notes & Files</button>
+            </div>
         </div>
 
         <!-- Modal Body -->
-        <div id="event-modal-content" class="p-4 md:p-6 overflow-y-auto grow">
+        <div id="event-modal-content" class="modal-body">
             <!-- Form content injected here -->
         </div>
 
         <!-- Modal Footer -->
-        <div class="p-4 border-t border-slate-100 bg-white shrink-0" id="event-modal-footer">
-            <button onclick="saveEvent()" class="w-full bg-purple-600 text-white py-3 rounded-xl hover:bg-purple-700 font-medium shadow-md transition transform active:scale-[0.99]">
-                Save Event
-            </button>
+        <div class="modal-footer" id="event-modal-footer">
+            <button onclick="saveEvent()" class="btn-modal r-btn text-lg">Save Event</button>
         </div>
     </div>
 </div>
@@ -362,51 +639,70 @@
     // 1. STATE & CONFIG
     // ==============================================================
     
-    // ⚠️ UPDATED GOOGLE SCRIPT WEB APP URL
-    const CLOUD_URL = "https://script.google.com/macros/s/AKfycbwCo6ah0iyUsS1e-e5lKiIZ0XmaLMrWElP_94QygV1PG6Dh5Ak0K1pXYxSjBgEHpXO7/exec";
+    const Icons = {
+        close: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
+        edit: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
+        delete: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+        clip: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>`,
+        calendar: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+        pin: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+        dollar: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+        file: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`,
+        folderOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="9" y1="14" x2="15" y2="14"></line></svg>`,
+        external: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
+        sortUp: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>`,
+        sortDown: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`
+    };
 
-    // Load State
-    let eventsData = JSON.parse(localStorage.getItem('arts_events_data') || '[]');
-    let expensesData = JSON.parse(localStorage.getItem('arts_expenses_data') || '[]');
-    let appName = localStorage.getItem('arts_app_name') || 'Arts Events Manager';
-    let budgetData = JSON.parse(localStorage.getItem('arts_budget_data') || '[]');
+    // Supabase Configuration
+    const SUPABASE_URL = "https://knlmtrzxtqcmgaydwzqz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_9ROUJP2trRbgsbnrCB5K9g_KXSwis3O";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let appName = 'Arts Events Manager';
+    let appBackgroundImage = localStorage.getItem('arts_app_bg') || '';
+    let masterPasswordHash = ''; 
+    let isUnlocked = false;
     
     const DEFAULT_BUDGET_MONTHS = [
-        { name: "July", allocated: 0 },
-        { name: "August", allocated: 13000 },
-        { name: "September", allocated: 5600 },
-        { name: "October", allocated: 7050 },
-        { name: "November", allocated: 2000 },
-        { name: "December", allocated: 1000 },
-        { name: "January", allocated: 4000 },
-        { name: "February", allocated: 6000 },
-        { name: "March", allocated: 3000 },
-        { name: "April", allocated: 750 },
-        { name: "May", allocated: 1500 },
-        { name: "June", allocated: 0 }
+        { name: "July", allocated: 0 }, { name: "August", allocated: 13000 }, { name: "September", allocated: 5600 },
+        { name: "October", allocated: 7050 }, { name: "November", allocated: 2000 }, { name: "December", allocated: 1000 },
+        { name: "January", allocated: 4000 }, { name: "February", allocated: 6000 }, { name: "March", allocated: 3000 },
+        { name: "April", allocated: 750 }, { name: "May", allocated: 1500 }, { name: "June", allocated: 0 }
     ];
     
-    if (budgetData.length === 0) {
-        budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
-    }
+    let columnLabels = {
+        checklist: "Event Checklist", marketing: "Marketing Req", amazon: "Amazon", setlist: "Setlist", chalkboards: "Chalkboards", posters: "Posters Up"
+    };
     
-    let columnLabels = JSON.parse(localStorage.getItem('arts_column_labels') || JSON.stringify({
-        checklist: "Event Checklist", 
-        marketing: "Marketing Req",
-        amazon: "Amazon",
-        setlist: "Setlist",
-        chalkboards: "Chalkboards",
-        posters: "Posters Up"
-    }));
-    
+    let milestoneOffsets = {
+        checklist: 4, marketing: 3, amazon: 2, setlist: 2, chalkboards: 1, posters: 1
+    };
+
     const MILESTONE_KEYS = ["checklist", "marketing", "amazon", "setlist", "chalkboards", "posters"];
     
+    // Yearly Data State
+    let currentYear = localStorage.getItem('arts_current_year') || '2025-2026';
+    let availableYears = [currentYear];
+
+    let eventsData = [];
+    let expensesData = [];
+    let budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
+
     let isSyncing = false;
     let syncInterval = null;
     let editingEventId = null; 
     let tempFiles = {}; 
     let currentView = 'events';
     let isReadOnly = false;
+    let eventsViewMode = localStorage.getItem('arts_view_mode') || 'list';
+
+    // Sorting State
+    let sortCol = 'date';
+    let sortDir = 'asc';
+
+    // Calendar State
+    let currentCalDate = new Date();
 
     // ==============================================================
     // 2. HELPER FUNCTIONS
@@ -428,67 +724,141 @@
         const diffTime = due - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return 'overdue';
-        if (diffDays <= 7) return 'warning';
+        if (diffDays <= 14) return 'warning';
         return 'safe';
     }
 
     function getStatusClasses(status) {
         switch(status) {
-            case 'completed': return 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200';
-            case 'overdue': return 'bg-red-500 text-white border-red-600 animate-pulse hover:bg-red-600';
-            case 'warning': return 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200';
-            default: return 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+            case 'completed': return 'badge badge-ok';
+            case 'overdue': return 'badge badge-fire';
+            case 'warning': return 'badge badge-warn text-black';
+            default: return 'badge border border-white/20 bg-black/20';
         }
     }
 
     function hasFiles(ev) {
-        if (!ev.files) return false;
-        const hasUploads = Object.values(ev.files).some(arr => arr && arr.length > 0);
         const hasNotes = ev.notes && ev.notes.trim().length > 0;
+        if (!ev.files) return hasNotes;
+        const hasUploads = Object.values(ev.files).some(arr => arr && arr.length > 0);
         return hasUploads || hasNotes;
     }
     
     function renderAppTitle() {
         const el = document.getElementById('app-title-display');
-        if (el) el.innerText = `🎨 ${appName}`;
+        if (el) el.innerText = appName;
+        document.title = `${appName} — Pro Edition`;
     }
 
     // ==============================================================
     // 3. CORE UI & INIT
     // ==============================================================
     
-    function initApp() {
+    async function initApp() {
+        await loadMasterIndex(); // Loads the list of years AND the master password
+
+        if (!masterPasswordHash) {
+            // No password set globally, unlock immediately
+            unlockApp();
+        } else {
+            // Check local session
+            const localAuth = localStorage.getItem('arts_auth_token');
+            if (localAuth === masterPasswordHash) {
+                unlockApp();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('auth-password').focus();
+            }
+        }
+    }
+
+    window.submitAuth = function() {
+        const input = document.getElementById('auth-password').value;
+        const hashedInput = btoa(input); // simple obfuscation for local comparison
+        
+        if (!masterPasswordHash || hashedInput === masterPasswordHash) {
+            localStorage.setItem('arts_auth_token', hashedInput);
+            document.getElementById('auth-screen').classList.add('opacity-0');
+            setTimeout(() => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                unlockApp();
+            }, 500);
+        } else {
+            const passInput = document.getElementById('auth-password');
+            passInput.value = '';
+            passInput.placeholder = 'Incorrect Password';
+            passInput.classList.add('border-[#FF3B30]', 'bg-[#FF3B30]/10');
+            setTimeout(() => {
+                passInput.placeholder = '••••••••';
+                passInput.classList.remove('border-[#FF3B30]', 'bg-[#FF3B30]/10');
+            }, 1500);
+        }
+    };
+
+    function unlockApp() {
+        isUnlocked = true;
+        document.getElementById('app-container').classList.add('unlocked');
+        
+        renderYearSelector();
         renderAppTitle();
         renderTableHeader();
         renderEvents();
         renderBudgetView();
         renderPhotosView();
+        renderCalendar();
         updateSyncUI();
         startCloudSync();
+        setEventsView(eventsViewMode);
     }
 
     window.switchView = function(viewName) {
         currentView = viewName;
-        const views = {
-            events: document.getElementById('view-events'),
-            budget: document.getElementById('view-budget'),
-            photos: document.getElementById('view-photos')
-        };
-        
-        const tabs = {
-            events: document.getElementById('nav-events'),
-            budget: document.getElementById('nav-budget'),
-            photos: document.getElementById('nav-photos')
-        };
+        const views = { events: 'view-events', calendar: 'view-calendar', budget: 'view-budget', photos: 'view-photos' };
+        const tabs = { events: 'nav-events', calendar: 'nav-calendar', budget: 'nav-budget', photos: 'nav-photos' };
 
-        Object.values(views).forEach(el => el.classList.add('hidden'));
-        Object.values(tabs).forEach(el => el.classList.remove('active'));
+        Object.values(views).forEach(id => document.getElementById(id).classList.add('hidden'));
+        Object.values(tabs).forEach(id => document.getElementById(id).classList.remove('active-tab'));
 
-        if (views[viewName]) views[viewName].classList.remove('hidden');
-        if (tabs[viewName]) tabs[viewName].classList.add('active');
+        if (views[viewName]) document.getElementById(views[viewName]).classList.remove('hidden');
+        if (tabs[viewName]) document.getElementById(tabs[viewName]).classList.add('active-tab');
 
         if (viewName === 'budget') renderBudgetView();
         if (viewName === 'photos') renderPhotosView();
+        if (viewName === 'calendar') renderCalendar();
+    };
+
+    window.setEventsView = function(mode) {
+        eventsViewMode = mode;
+        localStorage.setItem('arts_view_mode', mode);
+        
+        const btnList = document.getElementById('btn-view-list');
+        const btnCard = document.getElementById('btn-view-card');
+        const listView = document.getElementById('events-list-view');
+        const cardView = document.getElementById('events-card-view');
+        
+        if (mode === 'list') {
+            btnList.classList.replace('bg-transparent', 'bg-white/10');
+            btnList.classList.replace('text-gray-400', 'text-white');
+            btnCard.classList.replace('bg-white/10', 'bg-transparent');
+            btnCard.classList.replace('text-white', 'text-gray-400');
+            
+            if (eventsData.length > 0) {
+                listView.classList.remove('hidden');
+                cardView.classList.add('hidden');
+                cardView.classList.remove('grid'); 
+            }
+        } else {
+            btnCard.classList.replace('bg-transparent', 'bg-white/10');
+            btnCard.classList.replace('text-gray-400', 'text-white');
+            btnList.classList.replace('bg-white/10', 'bg-transparent');
+            btnList.classList.replace('text-white', 'text-gray-400');
+            
+            if (eventsData.length > 0) {
+                cardView.classList.remove('hidden');
+                cardView.classList.add('grid');
+                listView.classList.add('hidden');
+            }
+        }
     };
     
     window.toggleBudgetBreakdown = function() {
@@ -496,242 +866,510 @@
         const caret = document.getElementById('budget-caret');
         if (content.classList.contains('hidden')) {
             content.classList.remove('hidden');
-            caret.classList.remove('rotate-90');
+            caret.classList.remove('-rotate-90');
         } else {
             content.classList.add('hidden');
-            caret.classList.add('rotate-90');
+            caret.classList.add('-rotate-90');
         }
     }
 
     // ==============================================================
-    // 4. PDF GENERATION (UPDATED & ROBUST)
+    // 4. EXPORTS (PDF / CSV)
     // ==============================================================
     
     window.downloadPDF = function() {
         const btn = document.querySelector('button[onclick="downloadPDF()"]');
-        const originalText = btn.innerText;
-        btn.innerText = "⏳";
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = "⏳";
         btn.disabled = true;
 
         setTimeout(() => {
             const container = document.createElement('div');
-            container.style.padding = '20px';
+            container.style.padding = '30px';
             container.style.fontFamily = 'sans-serif';
-            container.style.background = 'white';
-            container.style.width = '1100px'; // Fixed width for consistency
+            container.style.background = '#000';
+            container.style.color = '#fff';
+            container.style.width = '1100px';
 
-            // HEADER
             const title = document.createElement('h1');
             title.innerText = appName + " Report";
             title.style.textAlign = 'center';
             title.style.marginBottom = '20px';
+            title.style.color = '#0A84FF';
             container.appendChild(title);
 
-            // 1. EVENTS SECTION
             const h2Events = document.createElement('h2');
             h2Events.innerText = "Events Overview";
-            h2Events.style.borderBottom = '2px solid #ddd';
-            h2Events.style.paddingBottom = '5px';
-            h2Events.style.marginTop = '20px';
+            h2Events.style.borderBottom = '1px solid #333';
+            h2Events.style.paddingBottom = '10px';
             container.appendChild(h2Events);
 
             const eventsClone = document.getElementById('events-table-main').cloneNode(true);
             const rows = eventsClone.rows;
             for(let i=0; i<rows.length; i++) {
-                // Remove action columns (last cell)
-                if(rows[i].cells.length > 0) rows[i].deleteCell(-1);
-                // Replace complex buttons with text
-                const dateCell = rows[i].cells[5]; // Deadline cells start index
-                // We just let text render as is, but remove button styles
+                if(rows[i].cells.length > 0) rows[i].deleteCell(-1); 
             }
             container.appendChild(eventsClone);
 
-            // 2. BUDGET SECTION
-            const h2Budget = document.createElement('h2');
-            h2Budget.innerText = "Financial Report";
-            h2Budget.style.borderBottom = '2px solid #ddd';
-            h2Budget.style.paddingBottom = '5px';
-            h2Budget.style.marginTop = '30px';
-            h2Budget.style.pageBreakBefore = 'always';
-            container.appendChild(h2Budget);
-
-            const budgetCard = document.getElementById('budget-overview-card').cloneNode(true);
-            // Force visible
-            const bdContent = budgetCard.querySelector('#budget-breakdown-content');
-            if(bdContent) bdContent.classList.remove('hidden');
-            
-            // Clean Inputs
-            budgetCard.querySelectorAll('input').forEach(inp => {
-                const span = document.createElement('span');
-                span.innerText = inp.value ? '$' + Number(inp.value).toLocaleString() : '$0';
-                inp.parentNode.replaceChild(span, inp);
-            });
-            // Remove buttons
-            budgetCard.querySelectorAll('button, .action-col').forEach(el => el.remove());
-            container.appendChild(budgetCard);
-
-            // Add Financial Table
-            const finTable = document.getElementById('event-financials-body').parentNode.parentNode.cloneNode(true);
-            finTable.style.marginTop = '20px';
-            finTable.querySelectorAll('input').forEach(inp => {
-                const span = document.createElement('span');
-                span.innerText = inp.value || '0';
-                inp.parentNode.replaceChild(span, inp);
-            });
-            container.appendChild(finTable);
-
-
-            // 3. PHOTOS LIST
-            const h2Photos = document.createElement('h2');
-            h2Photos.innerText = "Event Links";
-            h2Photos.style.borderBottom = '2px solid #ddd';
-            h2Photos.style.paddingBottom = '5px';
-            h2Photos.style.marginTop = '30px';
-            h2Photos.style.pageBreakBefore = 'always';
-            container.appendChild(h2Photos);
-
-            const photoList = document.createElement('ul');
-            photoList.style.listStyle = 'none';
-            photoList.style.padding = '0';
-            
-            eventsData.forEach(ev => {
-                const li = document.createElement('li');
-                li.style.padding = '10px';
-                li.style.borderBottom = '1px solid #eee';
-                li.innerHTML = `
-                    <strong>${ev.name}</strong> (${formatDate(ev.date)})<br>
-                    ${ev.photosLink ? `<a href="${ev.photosLink}" style="color:blue;">View Photos on Drive</a>` : '<span style="color:#999;">No Drive Link</span>'}
-                `;
-                photoList.appendChild(li);
-            });
-            container.appendChild(photoList);
-
-            // GENERATE
             let opt = {
                 margin:       0.5,
                 filename:     `${appName}_Report.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 1.5, useCORS: false, logging: false },
+                html2canvas:  { scale: 1.5, useCORS: true, logging: false, backgroundColor: '#000' },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
             };
 
             html2pdf().set(opt).from(container).save().then(() => {
-                btn.innerText = originalText;
+                btn.innerHTML = originalHTML;
                 btn.disabled = false;
             }).catch(err => {
                 console.error(err);
                 alert("PDF Error: " + err.message);
-                btn.innerText = originalText;
+                btn.innerHTML = originalHTML;
                 btn.disabled = false;
             });
         }, 200);
     };
 
+    window.exportToCSV = function() {
+        if (eventsData.length === 0) return alert("No events to export.");
+        
+        let headers = ["Event Name", "Date", "Time", "Location", "Coordinator", "Budget", "Spent", "Remaining", "Status", "Cart", "Attendance"];
+        MILESTONE_KEYS.forEach(k => headers.push(columnLabels[k] + " Deadline", columnLabels[k] + " Assignee", columnLabels[k] + " Status"));
+        
+        let csvContent = headers.join(',') + '\n';
+        
+        const sorted = [...eventsData].sort((a,b) => new Date(a.date) - new Date(b.date));
+        
+        sorted.forEach(ev => {
+            let spent = expensesData.filter(e => e.eventId === ev.id).reduce((sum, e) => sum + (Number(e.cost)||0), 0);
+            let remaining = (Number(ev.budget) || 0) - spent;
+            
+            let row = [
+                `"${(ev.name||'').replace(/"/g, '""')}"`,
+                `"${ev.date||''}"`,
+                `"${ev.time||''}"`,
+                `"${(ev.location||'').replace(/"/g, '""')}"`,
+                `"${(ev.contact||'').replace(/"/g, '""')}"`,
+                ev.budget || 0,
+                spent,
+                remaining,
+                `"${ev.status||''}"`,
+                `"${ev.cart||''}"`,
+                ev.attendance || 0
+            ];
+            
+            MILESTONE_KEYS.forEach(k => {
+                let m = ev.deadlines?.[k] || {};
+                row.push(`"${m.date||''}"`);
+                row.push(`"${(m.assignee||'').replace(/"/g, '""')}"`);
+                row.push(`"${m.completed ? 'Completed' : 'Pending'}"`);
+            });
+            
+            csvContent += row.join(',') + '\n';
+        });
+        
+        let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        let link = document.createElement("a");
+        let url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Arts_Events_${currentYear}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // ==============================================================
-    // 5. RENDER FUNCTIONS
+    // 5. RENDER FUNCTIONS & SORTING
     // ==============================================================
 
-    function renderFileCategories() {
-        const categories = [
-            { id: "general", label: "Event Checklist & General" },
-            { id: "marketing", label: "Marketing Requests" },
-            { id: "amazon", label: "Amazon Orders" }
-        ];
+    window.handleSort = function(col) {
+        if (sortCol === col) {
+            sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortCol = col;
+            sortDir = 'asc';
+        }
+        renderTableHeader();
+        renderEvents();
+    };
 
-        return categories.map(cat => `
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-sm text-slate-700">${cat.label}</h3>
-                    ${!isReadOnly ? `<label class="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition">Upload File<input type="file" class="hidden file-input" data-cat="${cat.id}"></label>` : ''}
-                </div>
-                <div id="file-list-${cat.id}" class="space-y-2">
-                    ${(tempFiles[cat.id] && tempFiles[cat.id].length > 0) ? 
-                        tempFiles[cat.id].map(f => `
-                            <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center shadow-sm">
-                                <div class="flex items-center gap-2 overflow-hidden">
-                                    <span class="text-lg">📄</span>
-                                    <div class="min-w-0">
-                                        <div class="text-xs font-bold text-slate-800 truncate">
-                                            ${f.url ? `<a href="${f.url}" target="_blank" class="text-blue-600 hover:underline">${f.name}</a>` : f.name}
-                                        </div>
-                                        <div class="text-[10px] text-slate-400">${f.size || 'Drive File'} • ${f.date}</div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    ${f.status === 'uploading' ? '<span class="text-[10px] text-purple-600 font-bold animate-pulse">Uploading...</span>' : ''}
-                                    ${!isReadOnly ? `<button onclick="removeFile('${cat.id}', '${f.id}')" class="text-red-400 hover:text-red-600 p-1">✕</button>` : ''}
-                                </div>
-                            </div>
-                        `).join('') 
-                    : '<div class="text-center py-4 border-2 border-dashed border-slate-200 rounded-lg text-xs text-slate-400">No files uploaded yet</div>'}
-                </div>
-            </div>
-        `).join('');
+    function renderTableHeader() {
+        const row = document.getElementById('table-header-row');
+        if (!row) return;
+        
+        const thClass = "cursor-pointer hover:text-white transition group select-none";
+        const getIcon = (c) => sortCol === c ? `<span class="ml-1 inline-flex text-[#0A84FF]">${sortDir === 'asc' ? Icons.sortUp : Icons.sortDown}</span>` : `<span class="ml-1 inline-flex text-transparent group-hover:text-gray-500">${Icons.sortDown}</span>`;
+
+        row.innerHTML = `
+            <th class="min-w-[200px] ${thClass}" onclick="handleSort('name')">Event Name ${getIcon('name')}</th>
+            <th class="min-w-[100px] ${thClass}" onclick="handleSort('date')">Date ${getIcon('date')}</th>
+            <th class="min-w-[100px] ${thClass}" onclick="handleSort('time')">Time ${getIcon('time')}</th>
+            <th class="min-w-[140px] ${thClass}" onclick="handleSort('location')">Location ${getIcon('location')}</th>
+            <th class="min-w-[130px] ${thClass}" onclick="handleSort('budget')">Budget ${getIcon('budget')}</th>
+            <th class="min-w-[100px] ${thClass}" onclick="handleSort('cart')">Cart ${getIcon('cart')}</th>
+            <th class="min-w-[120px] ${thClass}" onclick="handleSort('status')">Status ${getIcon('status')}</th>
+            <th class="w-[80px] text-right !cursor-default">Actions</th>
+        `;
+        const refNode = row.children[5];
+        MILESTONE_KEYS.forEach(key => {
+            const th = document.createElement('th');
+            th.className = "text-center min-w-[140px] !cursor-default";
+            th.textContent = columnLabels[key] || key;
+            row.insertBefore(th, refNode);
+        });
     }
 
-    function renderPhotosView() {
-        const grid = document.getElementById('photos-grid');
-        grid.innerHTML = '';
+    function renderUpcomingDeadlines() {
+        const widget = document.getElementById('upcoming-widget');
+        const list = document.getElementById('upcoming-list');
+        
+        if (!widget || !list) return;
 
-        if (eventsData.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-10">No events found.</div>';
+        let upcoming = [];
+        eventsData.forEach(ev => {
+            MILESTONE_KEYS.forEach(k => {
+                let m = ev.deadlines?.[k];
+                if (m && m.date && !m.completed) {
+                    let due = new Date(m.date + 'T12:00:00');
+                    let today = new Date(); today.setHours(0,0,0,0);
+                    let diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays <= 14) {
+                        upcoming.push({
+                            evId: ev.id,
+                            evName: ev.name,
+                            task: columnLabels[k] || k,
+                            dateStr: m.date,
+                            diff: diffDays,
+                            assignee: m.assignee || 'Unassigned'
+                        });
+                    }
+                }
+            });
+        });
+
+        if (upcoming.length === 0) {
+            widget.classList.add('hidden');
             return;
         }
 
-        const sorted = [...eventsData].sort((a,b) => new Date(a.date) - new Date(b.date));
+        widget.classList.remove('hidden');
+        upcoming.sort((a,b) => a.diff - b.diff);
+        
+        // Show up to top 8 items
+        const topItems = upcoming.slice(0, 8);
+        
+        list.innerHTML = topItems.map(item => {
+            let statusText = item.diff < 0 ? `${Math.abs(item.diff)}d Overdue` : item.diff === 0 ? 'Due Today' : `In ${item.diff}d`;
+            let colorClass = item.diff < 0 ? 'text-[#FF3B30]' : item.diff <= 3 ? 'text-[#FFD60A]' : 'text-[#34C759]';
+            
+            return `
+                <div class="bg-black/20 border border-white/10 p-3 rounded-xl cursor-pointer hover:bg-white/5 transition" onclick="openEventEditor('${item.evId}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate mr-2" title="${item.task}">${item.task}</span>
+                        <span class="text-[10px] font-bold ${colorClass} whitespace-nowrap">${statusText}</span>
+                    </div>
+                    <div class="font-bold text-sm text-white truncate mb-1" title="${item.evName}">${item.evName}</div>
+                    <div class="text-[10px] text-gray-500 font-medium">${formatDate(item.dateStr)} • ${item.assignee}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderEvents() {
+        const tbody = document.getElementById('events-body');
+        const cardView = document.getElementById('events-card-view');
+        const emptyState = document.getElementById('empty-state');
+        const listView = document.getElementById('events-list-view');
+
+        if (!tbody || !cardView) return;
+        
+        tbody.innerHTML = '';
+        cardView.innerHTML = '';
+        
+        if (eventsData.length === 0) {
+            emptyState.classList.replace('hidden','flex');
+            listView.classList.add('hidden');
+            cardView.classList.add('hidden');
+            document.getElementById('upcoming-widget').classList.add('hidden');
+            return;
+        } else {
+            emptyState.classList.replace('flex','hidden');
+            setEventsView(eventsViewMode);
+            renderUpcomingDeadlines();
+        }
+
+        const sorted = [...eventsData].sort((a,b) => {
+            let valA = a[sortCol]; let valB = b[sortCol];
+            
+            if (sortCol === 'budget') {
+                valA = Number(valA) || 0; valB = Number(valB) || 0;
+            } else if (sortCol === 'date') {
+                valA = new Date(valA || '2099-01-01'); valB = new Date(valB || '2099-01-01');
+            } else {
+                valA = (valA || '').toLowerCase(); valB = (valB || '').toLowerCase();
+            }
+
+            if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
 
         sorted.forEach(ev => {
-            const card = document.createElement('div');
-            card.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col";
+            const evExpenses = expensesData.filter(e => e.eventId === ev.id);
+            const totalCost = evExpenses.reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
+            const remaining = (Number(ev.budget) || 0) - totalCost;
+            const remainingColor = remaining < 0 ? 'text-[#FF3B30]' : 'text-white';
+
+            // ------------------------------------
+            // 1. Build Table Row
+            // ------------------------------------
+            const tr = document.createElement('tr');
             
-            // Safe SVG Placeholder
-            const bgImage = ev.coverImage || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23f1f5f9%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3Ctext%20fill%3D%22%23cbd5e1%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20dy%3D%2210.5%22%20font-weight%3D%22bold%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20text-anchor%3D%22middle%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
-            
-            card.innerHTML = `
-                <div class="relative aspect-video bg-slate-100 overflow-hidden group">
-                    <img src="${bgImage}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23f1f5f9%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3Ctext%20fill%3D%22%23cbd5e1%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20dy%3D%2210.5%22%20font-weight%3D%22bold%22%20x%3D%2250%25%22%20y%3D%2250%25%22%20text-anchor%3D%22middle%22%3EError%3C%2Ftext%3E%3C%2Fsvg%3E'">
-                    ${ev.photosLink ? `
-                        <a href="${ev.photosLink}" target="_blank" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                            <span class="bg-white text-slate-900 px-4 py-2 rounded-full font-bold text-sm transform scale-95 group-hover:scale-100 transition">📂 Open Drive Folder</span>
-                        </a>
-                    ` : ''}
-                </div>
-                <div class="p-4 flex-1 flex flex-col gap-3">
-                    <div>
-                        <h3 class="font-bold text-slate-800 truncate">${ev.name}</h3>
-                        <p class="text-xs text-slate-500">${formatDate(ev.date)}</p>
-                    </div>
-                    <div class="mt-auto space-y-2">
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">Cover Image URL</label>
-                            <input type="text" value="${ev.coverImage || ''}" 
-                                ${isReadOnly ? 'disabled class="read-only-input w-full px-2 py-1 border border-slate-200 rounded"' : `onchange="updateEventPhoto('${ev.id}', 'coverImage', this.value)" class="w-full px-2 py-1 border border-slate-200 rounded bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none"`}
-                                placeholder="Paste image link...">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">Google Drive Link</label>
-                            <div class="flex gap-1">
-                                <input type="text" value="${ev.photosLink || ''}" 
-                                    ${isReadOnly ? 'disabled class="read-only-input flex-1 px-2 py-1 border border-slate-200 rounded"' : `onchange="updateEventPhoto('${ev.id}', 'photosLink', this.value)" class="flex-1 px-2 py-1 border border-slate-200 rounded bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none"`}
-                                    placeholder="Paste Drive link...">
-                                ${ev.photosLink ? `<a href="${ev.photosLink}" target="_blank" class="bg-blue-50 text-blue-600 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 text-xs">↗</a>` : ''}
+            let html = `
+                <td class="font-bold text-white">
+                   <div class="flex items-center justify-between gap-3">
+                        <span title="${ev.name}" class="whitespace-nowrap">${ev.name}</span>
+                        ${hasFiles(ev) ? `<button onclick="openEventEditor('${ev.id}', 'files')" class="text-[#0A84FF] bg-transparent border-none cursor-pointer flex items-center transition hover:scale-110" title="View Notes & Files">${Icons.clip}</button>` : ''}
+                   </div>
+                </td>
+                <td class="text-gray-400 font-medium">${formatDate(ev.date)}</td>
+                <td class="text-gray-400 font-medium">${ev.time || '-'}</td>
+                <td class="text-gray-400 font-medium" title="${ev.location}">${ev.location || '-'}</td>
+                <td>
+                    <div class="text-white font-mono font-bold text-sm">$${(Number(ev.budget) || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} <span class="text-[9px] font-normal text-gray-500 uppercase tracking-wider ml-1">Budg</span></div>
+                    <div class="${remainingColor} font-mono font-bold text-xs mt-1">$${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})} <span class="text-[9px] font-normal text-gray-500 uppercase tracking-wider ml-1">Left</span></div>
+                </td>
+            `;
+
+            MILESTONE_KEYS.forEach(key => {
+                const m = ev.deadlines?.[key] || {};
+                const status = getDeadlineStatus(m.date, m.completed);
+                const badgeClass = getStatusClasses(status);
+                
+                let displayDate = '-';
+                if (m.date) {
+                    const [y, mo, d] = m.date.split('-');
+                    displayDate = `${parseInt(mo)}/${parseInt(d)}`;
+                }
+                
+                const buttonAction = (isReadOnly) ? '' : `onclick="toggleDeadline('${ev.id}', '${key}')"`;
+                const cursorClass = (isReadOnly) ? 'cursor-default' : 'cursor-pointer hover:scale-105 transition-transform';
+                
+                html += `
+                    <td class="text-center">
+                        ${m.date ? `
+                            <div class="flex flex-col gap-1.5 items-center justify-center">
+                                <button ${buttonAction} class="${badgeClass} ${cursorClass} border-none font-family-inherit">
+                                    ${displayDate}
+                                </button>
+                                ${m.assignee ? `<span class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">${m.assignee}</span>` : ''}
                             </div>
+                        ` : '<span class="text-gray-600">-</span>'}
+                    </td>
+                `;
+            });
+
+            html += `
+                <td><span class="badge border border-[#FFD60A]/30 text-[#FFD60A] bg-[#FFD60A]/10">${ev.cart || '-'}</span></td>
+                <td>
+                    <select ${isReadOnly ? 'disabled' : ''} onchange="updateStatus('${ev.id}', this.value)" class="text-[10px] font-bold px-3 py-2 r-btn border-none bg-black/20 uppercase tracking-wider ${isReadOnly?'cursor-not-allowed':''}">
+                        <option ${ev.status==='Submit'?'selected':''}>Submit</option>
+                        <option ${ev.status==='Pending'?'selected':''}>Pending</option>
+                        <option ${ev.status==='Approved'?'selected':''}>Approved</option>
+                        <option ${ev.status==='Denied'?'selected':''}>Denied</option>
+                    </select>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-3">
+                        <button onclick="openEventEditor('${ev.id}')" class="text-gray-400 hover:text-[#0A84FF] bg-transparent border-none cursor-pointer flex items-center transition">${Icons.edit}</button>
+                        ${!isReadOnly ? `<button onclick="deleteEvent('${ev.id}')" class="text-gray-400 hover:text-[#FF3B30] bg-transparent border-none cursor-pointer flex items-center transition">${Icons.delete}</button>` : ''}
+                    </div>
+                </td>
+            `;
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+
+            // ------------------------------------
+            // 2. Build Grid Card (Preview Mode)
+            // ------------------------------------
+            const card = document.createElement('div');
+            card.className = "frosted r-card flex flex-col overflow-hidden";
+            
+            const bgImage = ev.coverImage || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E';
+
+            card.innerHTML = `
+                <div class="relative h-40 w-full overflow-hidden cursor-pointer group flex-shrink-0" onclick="openEventEditor('${ev.id}')">
+                    <img src="${bgImage}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                        <h3 class="font-bold text-xl text-white leading-tight pr-4 drop-shadow-md truncate">${ev.name}</h3>
+                        ${hasFiles(ev) ? `<button onclick="event.stopPropagation(); openEventEditor('${ev.id}', 'files')" class="text-[#0A84FF] bg-black/40 backdrop-blur-md rounded-full w-8 h-8 flex items-center justify-center border border-white/10 cursor-pointer text-sm flex-shrink-0 hover:bg-black/60 transition shadow-lg" title="View Notes & Files">${Icons.clip}</button>` : ''}
+                    </div>
+                </div>
+                <div class="p-6 flex flex-col flex-1">
+                    <div class="text-sm text-gray-400 font-medium space-y-3 mb-6 cursor-pointer" onclick="openEventEditor('${ev.id}')">
+                        <p class="flex items-center gap-3"><span class="opacity-70 flex items-center">${Icons.calendar}</span> <span class="pt-0.5">${formatDate(ev.date)} ${ev.time ? `• ${ev.time}` : ''}</span></p>
+                        <p class="flex items-center gap-3 truncate" title="${ev.location}"><span class="opacity-70 flex items-center">${Icons.pin}</span> <span class="pt-0.5">${ev.location || '-'}</span></p>
+                        <div class="flex items-start gap-3 w-full mt-2 bg-black/20 p-3 rounded-xl border border-white/5">
+                            <span class="opacity-70 flex items-center mt-0.5 text-gray-400">${Icons.dollar}</span>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center w-full mb-1">
+                                    <span class="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Budget</span>
+                                    <span class="text-white font-mono font-bold text-xs">$${(Number(ev.budget) || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="flex justify-between items-center w-full mb-1">
+                                    <span class="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Spent</span>
+                                    <span class="text-gray-300 font-mono font-bold text-xs">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="flex justify-between items-center w-full pt-1.5 mt-1 border-t border-white/5">
+                                    <span class="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Left</span>
+                                    <span class="${remainingColor} font-mono font-bold text-xs">$${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto pt-5 border-t border-white/10 flex justify-between items-center">
+                        <div class="flex gap-3 items-center min-w-0 flex-1 mr-2">
+                            <select ${isReadOnly ? 'disabled' : ''} onchange="updateStatus('${ev.id}', this.value)" class="text-[9px] font-bold px-2 py-1 r-btn border-none bg-black/20 uppercase tracking-wider ${isReadOnly?'cursor-not-allowed':''} flex-shrink-0">
+                                <option ${ev.status==='Submit'?'selected':''}>Submit</option>
+                                <option ${ev.status==='Pending'?'selected':''}>Pending</option>
+                                <option ${ev.status==='Approved'?'selected':''}>Approved</option>
+                                <option ${ev.status==='Denied'?'selected':''}>Denied</option>
+                            </select>
+                            <span class="text-xs text-gray-400 font-medium truncate" title="Coordinator: ${ev.contact || 'None'}">👤 ${ev.contact || 'Unassigned'}</span>
+                        </div>
+                        <div class="flex gap-4 items-center flex-shrink-0">
+                            <button onclick="openEventEditor('${ev.id}')" class="text-gray-400 hover:text-[#0A84FF] bg-transparent border-none cursor-pointer flex items-center transition">${Icons.edit}</button>
+                            ${!isReadOnly ? `<button onclick="deleteEvent('${ev.id}')" class="text-gray-400 hover:text-[#FF3B30] bg-transparent border-none cursor-pointer flex items-center transition">${Icons.delete}</button>` : ''}
                         </div>
                     </div>
                 </div>
             `;
-            grid.appendChild(card);
+            cardView.appendChild(card);
         });
     }
 
-    window.updateEventPhoto = function(id, field, value) {
-        if (isReadOnly) return;
-        const ev = eventsData.find(e => e.id === id);
-        if (ev) {
-            ev[field] = value;
-            saveLocal();
-            if (field === 'coverImage') renderPhotosView();
+    // ==============================================================
+    // CALENDAR LOGIC
+    // ==============================================================
+    
+    window.changeMonth = function(delta) {
+        currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+        renderCalendar();
+    };
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        const title = document.getElementById('calendar-month-display');
+        if (!grid || !title) return;
+
+        const year = currentCalDate.getFullYear();
+        const month = currentCalDate.getMonth();
+        
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        title.innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+        let html = '';
+
+        // Previous Month fading cells
+        for (let i = 0; i < firstDay; i++) {
+            let d = daysInPrevMonth - firstDay + i + 1;
+            html += `<div class="cal-cell faded"><span class="text-xs font-bold text-gray-500">${d}</span></div>`;
         }
+
+        // Current Month
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            const dayEvents = eventsData.filter(e => e.date === dateStr);
+            
+            let isToday = false;
+            const today = new Date();
+            if(today.getDate()===i && today.getMonth()===month && today.getFullYear()===year) isToday = true;
+
+            let cellContent = `<div class="flex justify-between items-start mb-2"><span class="text-sm font-bold ${isToday ? 'text-[#0A84FF]' : 'text-gray-300'}">${i}</span></div>`;
+            
+            dayEvents.forEach(ev => {
+                cellContent += `<div onclick="openEventEditor('${ev.id}')" class="cal-event" title="${ev.name}">${ev.name}</div>`;
+            });
+
+            html += `<div class="cal-cell ${isToday ? 'border-[#0A84FF]/50 bg-[#0A84FF]/5' : ''}">${cellContent}</div>`;
+        }
+
+        // Next Month fading cells
+        const totalCells = firstDay + daysInMonth;
+        const remainderCells = 7 - (totalCells % 7);
+        if (remainderCells < 7) {
+            for (let i = 1; i <= remainderCells; i++) {
+                html += `<div class="cal-cell faded"><span class="text-xs font-bold text-gray-500">${i}</span></div>`;
+            }
+        }
+
+        grid.innerHTML = html;
+    }
+
+
+    // ==============================================================
+    // 6. BUDGET DATA LOGIC
+    // ==============================================================
+
+    window.updateAllocation = function(index, value) {
+        if (isReadOnly) return;
+        budgetData[index].allocated = Number(value) || 0;
+        saveLocal(); renderBudgetView();
+    };
+    
+    window.addBudgetMonth = function() {
+        if (isReadOnly) return;
+        const name = prompt("Enter Month Name (e.g., 'July 2025'):");
+        if (name) {
+            budgetData.push({ name: name, allocated: 0 });
+            saveLocal(); renderBudgetView();
+        }
+    };
+    
+    window.removeBudgetMonth = function(index) {
+        if (isReadOnly) return;
+        if(confirm("Remove this month?")) {
+            budgetData.splice(index, 1);
+            saveLocal(); renderBudgetView();
+        }
+    };
+
+    window.addExpense = function() {
+        if (isReadOnly) return;
+        const name = document.getElementById('exp-name').value;
+        const cost = document.getElementById('exp-cost').value;
+        const date = document.getElementById('exp-date').value;
+        const month = document.getElementById('exp-month').value;
+        const eventId = document.getElementById('exp-event').value;
+        const category = document.getElementById('exp-category').value;
+
+        if (!name || !cost) return alert("Please enter Name and Cost");
+
+        expensesData.push({ id: 'exp_' + Date.now(), name, cost, date, month, eventId, category });
+        saveLocal(); renderBudgetView();
+        
+        document.getElementById('exp-name').value = ''; document.getElementById('exp-cost').value = '';
+    };
+
+    window.deleteExpense = function(id) {
+        if (isReadOnly) return;
+        if(!confirm("Permanently delete this expense?")) return;
+        expensesData = expensesData.filter(e => e.id !== id);
+        saveLocal(); renderBudgetView();
+    };
+
+    window.updateAttendance = function(eventId, val) {
+        if (isReadOnly) return;
+        const ev = eventsData.find(e => e.id === eventId);
+        if(ev) { ev.attendance = val; saveLocal(); renderBudgetView(); }
     };
 
     function renderBudgetView() {
@@ -743,37 +1381,29 @@
         let yearlyAllocated = 0;
         let yearlyUsed = 0;
 
-        if (!budgetData || budgetData.length === 0) {
-            budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
-        }
-
         budgetData.forEach((m, index) => {
-            const used = expensesData
-                .filter(e => e.month === m.name)
-                .reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
-            
+            const used = expensesData.filter(e => e.month === m.name).reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
             const remaining = m.allocated - used;
             yearlyAllocated += Number(m.allocated);
             yearlyUsed += used;
 
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50";
             tr.innerHTML = `
-                <td class="px-4 py-3 font-medium text-slate-700">${m.name}</td>
-                <td class="px-4 py-3">
-                    <div class="flex items-center text-slate-500">
-                        <span class="mr-1">$</span>
+                <td class="font-bold text-white">${m.name}</td>
+                <td>
+                    <div class="flex items-center">
+                        <span class="mr-3 text-gray-500 font-bold">$</span>
                         <input type="number" value="${m.allocated}" 
-                            ${isReadOnly ? 'disabled class="read-only-input w-full px-2 py-1 border rounded text-xs"' : `onchange="updateAllocation(${index}, this.value)" class="w-full px-2 py-1 border rounded text-xs bg-white focus:ring-2 focus:ring-purple-200 outline-none font-mono"`}
+                            ${isReadOnly ? 'disabled class="read-only-input w-full px-4 py-2 r-btn font-mono text-base"' : `onchange="updateAllocation(${index}, this.value)" class="w-full px-4 py-2 r-btn font-mono text-base"`}
                         >
                     </div>
                 </td>
-                <td class="px-4 py-3 font-mono font-bold text-blue-600">$${used.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="px-4 py-3 font-mono text-right font-bold ${remaining < 0 ? 'text-red-600' : 'text-green-600'}">
+                <td class="font-mono font-bold text-base">$${used.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="font-mono text-right font-bold text-base ${remaining < 0 ? 'text-[#FF3B30]' : 'text-white'}">
                     $${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})}
                 </td>
-                <td class="px-4 py-3 text-center action-col">
-                    ${!isReadOnly ? `<button onclick="removeBudgetMonth(${index})" class="text-slate-300 hover:text-red-500">✕</button>` : ''}
+                <td class="text-center action-col">
+                    ${!isReadOnly ? `<button onclick="removeBudgetMonth(${index})" class="text-gray-500 hover:text-[#FF3B30] bg-transparent border-none cursor-pointer p-3 leading-none flex items-center justify-center w-full transition">${Icons.delete}</button>` : ''}
                 </td>
             `;
             monthsBody.appendChild(tr);
@@ -800,15 +1430,15 @@
         [...expensesData].reverse().forEach(exp => {
             const evName = exp.eventId ? (eventsData.find(e => e.id === exp.eventId)?.name || 'Unknown Event') : 'General';
             const div = document.createElement('div');
-            div.className = "bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center text-xs";
+            div.className = "bg-black/20 p-5 r-card border border-white/10 flex justify-between items-center";
             div.innerHTML = `
                 <div>
-                    <div class="font-bold text-slate-700">${exp.name}</div>
-                    <div class="text-slate-400">${exp.date} • ${evName} • ${exp.month}</div>
+                    <div class="font-bold text-white text-base mb-1.5">${exp.name}</div>
+                    <div class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">${exp.date} • ${evName} • ${exp.month}</div>
                 </div>
                 <div class="text-right">
-                    <div class="font-mono font-bold text-slate-700">$${Number(exp.cost).toFixed(2)}</div>
-                    ${!isReadOnly ? `<button onclick="deleteExpense('${exp.id}')" class="text-red-400 hover:text-red-600 text-[10px]">Delete</button>` : ''}
+                    <div class="font-mono font-bold text-white text-lg">$${Number(exp.cost).toFixed(2)}</div>
+                    ${!isReadOnly ? `<button onclick="deleteExpense('${exp.id}')" class="text-[#FF3B30] hover:text-white text-[10px] uppercase tracking-wider font-bold bg-transparent border-none cursor-pointer mt-1">Delete</button>` : ''}
                 </div>
             `;
             expList.appendChild(div);
@@ -817,7 +1447,8 @@
         const finBody = document.getElementById('event-financials-body');
         finBody.innerHTML = '';
         
-        eventsData.forEach(ev => {
+        const sortedFin = [...eventsData].sort((a,b) => new Date(a.date) - new Date(b.date));
+        sortedFin.forEach(ev => {
             const evExpenses = expensesData.filter(e => e.eventId === ev.id);
             const totalCost = evExpenses.reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
             const foodCost = evExpenses.filter(e => e.category === 'Food').reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
@@ -825,211 +1456,140 @@
             const costPerStudent = attendance > 0 ? (totalCost / attendance) : 0;
 
             const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50 border-b border-slate-50";
             tr.innerHTML = `
-                <td class="px-4 py-3 font-bold text-slate-800">${ev.name}</td>
-                <td class="px-4 py-3 font-mono text-slate-600">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="px-4 py-3 font-mono text-slate-500">$${foodCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                <td class="px-4 py-3">
+                <td class="font-bold text-white">${ev.name}</td>
+                <td class="font-mono text-gray-300 text-base">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td class="font-mono text-gray-400 text-base">$${foodCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                <td>
                     <input type="number" value="${attendance}" 
-                        ${isReadOnly ? 'disabled class="read-only-input w-20 px-2 py-1 border rounded text-xs"' : `onchange="updateAttendance('${ev.id}', this.value)" class="w-20 px-2 py-1 border rounded text-xs bg-white focus:ring-2 focus:ring-purple-200 outline-none"`}
+                        ${isReadOnly ? 'disabled class="read-only-input w-28 px-4 py-2 r-btn text-base"' : `onchange="updateAttendance('${ev.id}', this.value)" class="w-28 px-4 py-2 r-btn text-base"`}
                         placeholder="0">
                 </td>
-                <td class="px-4 py-3 font-mono text-slate-600">$${costPerStudent.toFixed(2)}</td>
+                <td class="font-mono text-[#0A84FF] font-bold text-base">$${costPerStudent.toFixed(2)}</td>
             `;
             finBody.appendChild(tr);
         });
     }
 
-    function renderTableHeader() {
-        const row = document.getElementById('table-header-row');
-        if (!row) return;
-        row.innerHTML = `
-            <th class="px-4 py-3 min-w-[120px] md:min-w-[180px] sticky left-0 bg-slate-900 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.1)]">Event Name</th>
-            <th class="px-4 py-3 min-w-[90px]">Date</th>
-            <th class="px-4 py-3 min-w-[90px]">Time</th>
-            <th class="px-4 py-3 min-w-[100px]">Location</th>
-            <th class="px-4 py-3 min-w-[90px]">Budget</th>
-            <!-- DYNAMIC HERE -->
-            <th class="px-4 py-3 min-w-[90px]">Cart</th>
-            <th class="px-4 py-3 min-w-[100px]">Status</th>
-            <th class="px-4 py-3 w-[60px]"></th>
-        `;
-        const refNode = row.children[5];
-        MILESTONE_KEYS.forEach(key => {
-            const th = document.createElement('th');
-            th.className = "px-4 py-3 min-w-[130px] bg-slate-900 text-center uppercase tracking-wider text-slate-100 font-bold";
-            th.textContent = columnLabels[key] || key;
-            row.insertBefore(th, refNode);
-        });
-    }
+    function renderPhotosView() {
+        const grid = document.getElementById('photos-grid');
+        grid.innerHTML = '';
 
-    function renderEvents() {
-        const tbody = document.getElementById('events-body');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        
         if (eventsData.length === 0) {
-            document.getElementById('empty-state').classList.replace('hidden','flex');
-        } else {
-            document.getElementById('empty-state').classList.replace('flex','hidden');
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-24 font-medium text-lg">No events found.</div>';
+            return;
         }
 
         const sorted = [...eventsData].sort((a,b) => new Date(a.date) - new Date(b.date));
 
         sorted.forEach(ev => {
-            const tr = document.createElement('tr');
-            tr.className = "hover:bg-slate-50 group border-b border-slate-50 last:border-0";
+            const card = document.createElement('div');
+            card.className = "card frosted r-card";
             
-            let html = `
-                <td class="px-2 md:px-4 py-3 font-semibold text-slate-900 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-100 shadow-[2px_0_5px_rgba(0,0,0,0.05)] z-10">
-                   <div class="flex items-center gap-2 h-full">
-                        <span class="truncate block max-w-[100px] md:max-w-full" title="${ev.name}">${ev.name}</span>
-                        ${
-                            hasFiles(ev) 
-                            ? `<button onclick="openEventEditor('${ev.id}', 'files')" class="text-blue-500 hover:text-blue-700 text-sm px-1 shrink-0" title="View Notes & Files">📎</button>` 
-                            : ''
-                        }
-                   </div>
-                </td>
-                <td class="px-4 py-3 text-slate-600 text-xs">${formatDate(ev.date)}</td>
-                <td class="px-4 py-3 text-slate-600 text-xs">${ev.time || '-'}</td>
-                <td class="px-4 py-3 text-slate-600 text-xs truncate max-w-[100px]">${ev.location || '-'}</td>
-                <td class="px-4 py-3 text-slate-600 font-mono text-xs">$${(ev.budget || 0).toLocaleString()}</td>
-            `;
-
-            MILESTONE_KEYS.forEach(key => {
-                const m = ev.deadlines?.[key] || {};
-                const status = getDeadlineStatus(m.date, m.completed);
-                const colorClass = getStatusClasses(status);
-                
-                // FIX: Always show date if available, even if completed (green class indicates done)
-                let displayDate = '-';
-                if (m.date) {
-                    const [y, mo, d] = m.date.split('-');
-                    displayDate = `${parseInt(mo)}/${parseInt(d)}`;
-                }
-                
-                const buttonAction = (typeof isReadOnly !== 'undefined' && isReadOnly) ? '' : `onclick="toggleDeadline('${ev.id}', '${key}')"`;
-                const cursorClass = (typeof isReadOnly !== 'undefined' && isReadOnly) ? 'cursor-default' : 'cursor-pointer';
-                
-                html += `
-                    <td class="px-2 py-3 border-l border-slate-100 text-center bg-opacity-50 ${status === 'overdue' ? 'bg-red-50/30' : ''}">
-                        ${m.date ? `
-                            <div class="flex flex-col gap-1 items-center">
-                                <button ${buttonAction} class="w-full py-1 px-1 rounded text-[10px] font-bold border transition-all ${colorClass} ${cursorClass}">
-                                    ${displayDate}
-                                </button>
-                                ${m.assignee ? `<span class="text-[9px] text-slate-400">${m.assignee}</span>` : ''}
+            const bgImage = ev.coverImage || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E';
+            
+            card.innerHTML = `
+                <div class="card-header group">
+                    <img src="${bgImage}" class="card-img" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E'">
+                    <div class="card-gradient-overlay flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                        ${ev.photosLink ? `<a href="${ev.photosLink}" target="_blank" class="bg-white/20 backdrop-blur-md text-white px-6 py-3 r-pill font-bold text-sm border border-white/30 transform scale-95 group-hover:scale-100 transition shadow-xl flex items-center gap-2">${Icons.folderOpen} Open Folder</a>` : ''}
+                    </div>
+                </div>
+                <div class="card-body gap-5">
+                    <div>
+                        <h3 class="font-bold text-xl text-white truncate mb-1">${ev.name}</h3>
+                        <p class="text-xs text-gray-400 font-bold tracking-wider uppercase">${formatDate(ev.date)}</p>
+                    </div>
+                    <div class="mt-auto space-y-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Cover Image</label>
+                            <label class="cursor-pointer bg-black/20 hover:bg-black/40 border border-white/10 text-white px-4 py-2.5 r-btn text-xs font-bold transition flex items-center justify-center w-full">
+                                Upload New Image
+                                <input type="file" class="hidden" accept="image/*" onchange="handleCoverImageUpload(event, '${ev.id}')" ${isReadOnly ? 'disabled' : ''}>
+                            </label>
+                            <div id="upload-status-${ev.id}" class="text-[10px] text-[#0A84FF] font-bold mt-2 text-center hidden"></div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Google Drive Link</label>
+                            <div class="flex gap-2">
+                                <input type="text" value="${ev.photosLink || ''}" 
+                                    ${isReadOnly ? 'disabled class="read-only-input flex-1 px-4 py-2.5 r-btn text-sm"' : `onchange="updateEventPhoto('${ev.id}', 'photosLink', this.value)" class="flex-1 px-4 py-2.5 r-btn text-sm"`}
+                                    placeholder="Paste Drive link...">
+                                ${ev.photosLink ? `<a href="${ev.photosLink}" target="_blank" class="bg-[#0A84FF]/20 text-[#0A84FF] px-4 py-2.5 r-btn border border-[#0A84FF]/30 hover:bg-[#0A84FF]/30 flex items-center justify-center transition">${Icons.external}</a>` : ''}
                             </div>
-                        ` : '<span class="text-slate-200">-</span>'}
-                    </td>
-                `;
-            });
-
-            const readOnlyMode = (typeof isReadOnly !== 'undefined' && isReadOnly);
-
-            html += `
-                <td class="px-4 py-3 border-l border-slate-100"><span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full">${ev.cart || '-'}</span></td>
-                <td class="px-4 py-3">
-                    <select ${readOnlyMode ? 'disabled' : ''} onchange="updateStatus('${ev.id}', this.value)" class="text-[10px] font-bold px-2 py-1 rounded border-none bg-slate-100 ${readOnlyMode?'cursor-not-allowed':''}">
-                        <option ${ev.status==='Submit'?'selected':''}>Submit</option>
-                        <option ${ev.status==='Pending'?'selected':''}>Pending</option>
-                        <option ${ev.status==='Approved'?'selected':''}>Approved</option>
-                        <option ${ev.status==='Denied'?'selected':''}>Denied</option>
-                    </select>
-                </td>
-                <td class="px-4 py-3 text-right">
-                    <button onclick="openEventEditor('${ev.id}')" class="text-slate-400 hover:text-blue-500 text-lg">✎</button>
-                    ${!readOnlyMode ? `<button onclick="deleteEvent('${ev.id}')" class="text-slate-400 hover:text-red-500 ml-2 text-lg">✕</button>` : ''}
-                </td>
+                        </div>
+                    </div>
+                </div>
             `;
-            tr.innerHTML = html;
-            tbody.appendChild(tr);
+            grid.appendChild(card);
         });
     }
 
+    window.updateEventPhoto = function(id, field, value) {
+        if (isReadOnly) return;
+        const ev = eventsData.find(e => e.id === id);
+        if (ev) {
+            ev[field] = value;
+            saveLocal();
+            if (field === 'coverImage') {
+                renderPhotosView();
+                renderEvents(); 
+            }
+        }
+    };
+
     // ==============================================================
-    // 6. DATA & SYNC LOGIC
+    // SYNC & CLOUD LOGIC
     // ==============================================================
 
-    window.updateAllocation = function(index, value) {
-        if (isReadOnly) return;
-        budgetData[index].allocated = Number(value) || 0;
-        saveLocal();
-        renderBudgetView();
-    };
-    
-    window.addBudgetMonth = function() {
-        if (isReadOnly) return;
-        const name = prompt("Enter Month Name (e.g., 'July 2025'):");
-        if (name) {
-            budgetData.push({ name: name, allocated: 0 });
-            saveLocal();
-            renderBudgetView();
-        }
-    };
-    
-    window.removeBudgetMonth = function(index) {
-        if (isReadOnly) return;
-        if(confirm("Are you sure you want to remove this month from the budget? This cannot be undone.")) {
-            budgetData.splice(index, 1);
-            saveLocal();
-            renderBudgetView();
-        }
-    };
-    
-    window.resetBudgetDefaults = function() {
-        if (isReadOnly) return;
-        if(confirm("Reset all budget months to defaults? Amounts will be reset.")) {
-            budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
-            saveLocal();
-            renderBudgetView();
-            alert("Budget reset.");
-        }
-    };
-
-    window.addExpense = function() {
-        if (isReadOnly) return;
-        const name = document.getElementById('exp-name').value;
-        const cost = document.getElementById('exp-cost').value;
-        const date = document.getElementById('exp-date').value;
-        const month = document.getElementById('exp-month').value;
-        const eventId = document.getElementById('exp-event').value;
-        const category = document.getElementById('exp-category').value;
-
-        if (!name || !cost) return alert("Please enter Name and Cost");
-
-        const newExp = {
-            id: 'exp_' + Date.now(),
-            name, cost, date, month, eventId, category
-        };
-
-        expensesData.push(newExp);
-        saveLocal();
-        renderBudgetView();
+    window.handleYearChange = async function(val) {
+        if (isReadOnly) return alert("Read-Only mode.");
         
-        document.getElementById('exp-name').value = '';
-        document.getElementById('exp-cost').value = '';
-    };
-
-    window.deleteExpense = function(id) {
-        if (isReadOnly) return;
-        if(!confirm("Are you sure you want to permanently delete this expense?")) return;
-        expensesData = expensesData.filter(e => e.id !== id);
-        saveLocal();
-        renderBudgetView();
-    };
-
-    window.updateAttendance = function(eventId, val) {
-        if (isReadOnly) return;
-        const ev = eventsData.find(e => e.id === eventId);
-        if(ev) {
-            ev.attendance = val;
-            saveLocal();
-            renderBudgetView(); 
+        if (val === 'NEW_YEAR') {
+            const newYear = prompt("Enter new academic year (e.g., 2026-2027):");
+            if (!newYear) {
+                renderYearSelector(); 
+                return;
+            }
+            if (!availableYears.includes(newYear)) {
+                availableYears.push(newYear);
+                availableYears.sort();
+            }
+            currentYear = newYear;
+        } else {
+            currentYear = val;
         }
+        
+        eventsData = [];
+        expensesData = [];
+        budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
+        
+        saveLocal(true); 
+        
+        renderYearSelector();
+        renderEvents();
+        renderBudgetView();
+        renderPhotosView();
+        renderCalendar();
+        await loadFromCloud(); 
     };
+
+    function renderYearSelector() {
+        const sel = document.getElementById('year-selector');
+        if (!sel) return;
+        sel.innerHTML = '';
+        availableYears.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === currentYear) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        const newOpt = document.createElement('option');
+        newOpt.value = 'NEW_YEAR';
+        newOpt.textContent = '+ Create New Year...';
+        sel.appendChild(newOpt);
+    }
     
     function startCloudSync() {
         updateSyncUI();
@@ -1041,159 +1601,245 @@
     function updateSyncUI() {
         const dot = document.getElementById('sync-dot');
         const text = document.getElementById('sync-text');
-        if (!dot || !text) return; 
-        if (isReadOnly) return; // Handled by updateReadOnlyUI
+        if (!dot || !text || isReadOnly) return; 
 
         if (isSyncing) {
-            dot.className = "loader border-slate-400 border-t-purple-600";
+            dot.className = "loader";
             text.innerText = "Syncing...";
         } else {
-            dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+            dot.className = "w-2 h-2 rounded-full bg-[#0A84FF] shadow-[0_0_8px_rgba(10,132,255,0.5)]";
             text.innerText = "Live";
         }
     }
-    
-    window.manualForceSync = async function() {
-        if (isReadOnly) return alert("Cannot sync in Read-Only mode.");
-        if (!confirm("Force data push to Google Sheets?")) return;
-        await syncToCloud();
-        alert("Sync command sent.");
+
+    async function loadMasterIndex() {
+        if (!SUPABASE_URL) return;
+        try {
+            const { data } = await _supabase.from('app_state').select('settings').eq('id', 'master_index').single();
+            if (data && data.settings) {
+                if (data.settings.availableYears) {
+                    const cloudYears = data.settings.availableYears;
+                    availableYears = [...new Set([...availableYears, ...cloudYears])].sort();
+                }
+                if (data.settings.masterPasswordHash !== undefined) {
+                    masterPasswordHash = data.settings.masterPasswordHash;
+                }
+            }
+        } catch (e) { console.log("Init Master Check Failed"); }
     }
     
-    window.archiveYear = async function() {
-        if (isReadOnly) return alert("Cannot archive while viewing an archive.");
-        const yearName = prompt("Enter name for Archive (e.g., 2024-2025):");
-        if (!yearName) return;
-        
-        if (!confirm(`Are you sure you want to archive ALL current data to 'Events_${yearName}' and reset the app?`)) return;
-        
-        isSyncing = true;
-        updateSyncUI();
-        
-        try {
-            await fetch(CLOUD_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'archive', archiveName: yearName })
-            });
-            
-            eventsData = [];
-            expensesData = [];
-            budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
-            
-            saveLocal(false); 
-            
-            alert("Archiving... The app will reset in a few seconds.");
-            setTimeout(() => {
-                location.reload();
-            }, 3000);
-            
-        } catch(e) {
-            alert("Archive failed: " + e);
-            isSyncing = false;
-            updateSyncUI();
-        }
-    };
-
     async function syncToCloud() {
-        if (!CLOUD_URL || isReadOnly) return;
-        isSyncing = true;
-        updateSyncUI();
-
+        if (!SUPABASE_URL || isReadOnly) return;
+        isSyncing = true; updateSyncUI();
         try {
-            const payload = {
-                action: 'save',
+            await _supabase.from('app_state').upsert({
+                id: `state_${currentYear}`,
                 events: eventsData,
                 expenses: expensesData,
                 budgets: budgetData,
-                settings: { appName: appName } 
-            };
-            
-            await fetch(CLOUD_URL, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
+                settings: { appName: appName, columnLabels: columnLabels, milestoneOffsets: milestoneOffsets, appBackgroundImage: appBackgroundImage }
             });
-        } catch (e) {
-            console.error("Sync Error", e);
-        } finally {
-            setTimeout(() => { isSyncing = false; updateSyncUI(); }, 1000);
-        }
+            await _supabase.from('app_state').upsert({
+                id: 'master_index',
+                settings: { availableYears: availableYears, masterPasswordHash: masterPasswordHash }
+            });
+        } catch (e) { console.error("Sync Error", e); } 
+        finally { setTimeout(() => { isSyncing = false; updateSyncUI(); }, 1000); }
     }
 
     async function loadFromCloud() {
-        if (!CLOUD_URL || isSyncing || isReadOnly) return;
+        if (!SUPABASE_URL || isSyncing || isReadOnly) return;
         try {
-            const res = await fetch(CLOUD_URL);
-            const data = await res.json();
-            
-            if (data.events) {
-                let changed = false;
-                
-                if (JSON.stringify(eventsData) !== JSON.stringify(data.events)) {
-                    eventsData = data.events;
-                    changed = true;
+            const { data: indexData } = await _supabase.from('app_state').select('settings').eq('id', 'master_index').single();
+            if (indexData && indexData.settings && indexData.settings.availableYears) {
+                const cloudYears = indexData.settings.availableYears;
+                const merged = [...new Set([...availableYears, ...cloudYears])].sort();
+                if (merged.length > availableYears.length) {
+                    availableYears = merged;
+                    renderYearSelector();
                 }
-                if (data.expenses && JSON.stringify(expensesData) !== JSON.stringify(data.expenses)) {
-                    expensesData = data.expenses;
-                    changed = true;
-                }
-                if (data.budgets && JSON.stringify(budgetData) !== JSON.stringify(data.budgets)) {
-                    budgetData = data.budgets;
-                    changed = true;
-                }
-                if (data.settings && data.settings.appName && data.settings.appName !== appName) {
-                    appName = data.settings.appName;
-                    changed = true;
-                }
-
-                if (changed) {
-                    saveLocal(false); 
-                    renderEvents();
-                    renderBudgetView();
-                    renderPhotosView();
-                    renderAppTitle(); 
+                if (indexData.settings.masterPasswordHash !== undefined) {
+                    masterPasswordHash = indexData.settings.masterPasswordHash;
                 }
             }
-        } catch (e) {
-            console.error("Load Error", e);
-        }
+
+            const { data, error } = await _supabase.from('app_state').select('*').eq('id', `state_${currentYear}`).single();
+            if (error && error.code !== 'PGRST116') { 
+                console.error("Supabase Load Error:", error);
+                return;
+            }
+            if (data) {
+                let changed = false;
+                if (JSON.stringify(eventsData) !== JSON.stringify(data.events || [])) { eventsData = data.events || []; changed = true; }
+                if (JSON.stringify(expensesData) !== JSON.stringify(data.expenses || [])) { expensesData = data.expenses || []; changed = true; }
+                if (JSON.stringify(budgetData) !== JSON.stringify(data.budgets || [])) { budgetData = data.budgets || JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS)); changed = true; }
+                if (data.settings) {
+                    if (data.settings.appName && data.settings.appName !== appName) { appName = data.settings.appName; changed = true; }
+                    if (data.settings.columnLabels && JSON.stringify(columnLabels) !== JSON.stringify(data.settings.columnLabels)) { columnLabels = data.settings.columnLabels; changed = true; }
+                    if (data.settings.milestoneOffsets && JSON.stringify(milestoneOffsets) !== JSON.stringify(data.settings.milestoneOffsets)) { milestoneOffsets = data.settings.milestoneOffsets; changed = true; }
+                    if (data.settings.appBackgroundImage !== undefined && appBackgroundImage !== data.settings.appBackgroundImage) { 
+                        appBackgroundImage = data.settings.appBackgroundImage; 
+                        applyBackground(); 
+                        changed = true; 
+                    }
+                }
+
+                if (changed && isUnlocked) {
+                    renderEvents(); renderBudgetView(); renderPhotosView(); renderAppTitle(); renderTableHeader(); renderCalendar();
+                }
+            }
+        } catch (e) { console.error("Load Error", e); }
     }
 
     function saveLocal(triggerSync = true) {
-        localStorage.setItem('arts_events_data', JSON.stringify(eventsData));
-        localStorage.setItem('arts_expenses_data', JSON.stringify(expensesData));
-        localStorage.setItem('arts_budget_data', JSON.stringify(budgetData));
-        localStorage.setItem('arts_column_labels', JSON.stringify(columnLabels));
-        localStorage.setItem('arts_app_name', appName);
-        
+        localStorage.setItem('arts_current_year', currentYear);
+        localStorage.setItem('arts_app_bg', appBackgroundImage);
         if (triggerSync) syncToCloud();
     }
 
     // ==============================================================
-    // 7. MODAL LOGIC & UPLOAD
+    // 7. FILE UPLOADS / BACKGROUND
     // ==============================================================
 
-    async function uploadToDrive(file, uiCallback) {
-        if (!CLOUD_URL || isReadOnly) return null;
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onerror = () => { uiCallback('Error'); resolve(null); };
-            reader.onload = async () => {
-                try {
-                    const base64 = reader.result.split(',')[1];
-                    const payload = { action: 'upload', fileName: file.name, mimeType: file.type, fileData: base64 };
-                    uiCallback('Uploading...');
-                    const res = await fetch(CLOUD_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-                    const json = await res.json();
-                    if (json.success) { uiCallback('Done'); resolve(json.url); } 
-                    else { uiCallback('Failed'); alert("Upload Failed: " + json.error); resolve(null); }
-                } catch (e) { uiCallback('Error'); resolve(null); }
-            };
-            reader.readAsDataURL(file);
+    window.handleBackgroundUpload = async function(e) {
+        if (isReadOnly) return;
+        const file = e.target.files[0];
+        const statusEl = document.getElementById('bg-upload-status');
+        
+        if (!file) return;
+        if (file.size > 25 * 1024 * 1024) {
+            if (statusEl) { statusEl.innerText = "File too large (>25MB)"; statusEl.classList.remove('hidden'); statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
+            return;
+        }
+        
+        if (statusEl) { 
+            statusEl.innerText = "Uploading background..."; 
+            statusEl.classList.remove('hidden'); 
+            statusEl.classList.replace('text-[#FF3B30]', 'text-[#0A84FF]');
+        }
+        
+        const url = await uploadToDrive(file, (msg) => {
+            if (statusEl) statusEl.innerText = msg;
         });
+        
+        if (url) {
+            appBackgroundImage = url;
+            applyBackground();
+            saveLocal();
+            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+        }
+    };
+
+    window.clearBackground = function() {
+        if (isReadOnly) return;
+        appBackgroundImage = '';
+        applyBackground();
+        saveLocal();
+    };
+
+    function applyBackground() {
+        if (appBackgroundImage) {
+            document.body.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.85)), url('${appBackgroundImage}')`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundAttachment = 'fixed';
+        } else {
+            document.body.style.backgroundImage = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E")`;
+            document.body.style.backgroundSize = 'auto';
+            document.body.style.backgroundPosition = 'top left';
+            document.body.style.backgroundAttachment = 'scroll';
+        }
+    }
+
+    window.handleCoverImageUpload = async function(e, id) {
+        if (isReadOnly) return;
+        const file = e.target.files[0];
+        if (!file || file.size > 25 * 1024 * 1024) return alert("File too large (>25MB)");
+        
+        const statusEl = document.getElementById(`upload-status-${id}`);
+        if (statusEl) { statusEl.innerText = "Uploading..."; statusEl.classList.remove('hidden'); }
+        
+        const url = await uploadToDrive(file, (msg) => {
+            if (statusEl) statusEl.innerText = msg;
+        });
+        
+        if (url) {
+            updateEventPhoto(id, 'coverImage', url);
+            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
+        }
+    };
+
+    async function uploadToDrive(file, uiCallback) {
+        if (isReadOnly) return null;
+        return new Promise(async (resolve) => {
+            uiCallback('Uploading...');
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                const filePath = `uploads/${fileName}`;
+
+                const { data, error } = await _supabase.storage.from('files').upload(filePath, file);
+                
+                if (error) {
+                    console.error(error);
+                    uiCallback('Failed'); alert("Upload Failed: " + error.message); resolve(null);
+                } else {
+                    const { data: publicUrlData } = _supabase.storage.from('files').getPublicUrl(filePath);
+                    uiCallback('Done'); resolve(publicUrlData.publicUrl);
+                }
+            } catch (e) { 
+                console.error(e);
+                uiCallback('Error'); resolve(null); 
+            }
+        });
+    }
+
+    function generateFileListHTML(catId) {
+        if (!tempFiles[catId] || tempFiles[catId].length === 0) {
+            return '<div class="text-center py-8 border-2 border-dashed border-white/10 r-btn text-sm text-gray-500 font-medium">No files uploaded yet</div>';
+        }
+        return tempFiles[catId].map(f => `
+            <div class="bg-black/40 p-4 r-btn border border-white/10 flex justify-between items-center">
+                <div class="flex items-center gap-4 overflow-hidden">
+                    <span class="text-gray-400 flex items-center justify-center">${Icons.file}</span>
+                    <div class="min-w-0">
+                        <div class="text-sm font-bold text-white truncate">
+                            ${f.url ? `<a href="${f.url}" target="_blank" class="text-[#0A84FF] hover:underline">${f.name}</a>` : f.name}
+                        </div>
+                        <div class="text-xs text-gray-500 font-medium mt-0.5">${f.size || 'Drive File'} • ${f.date}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    ${f.status === 'uploading' ? '<span class="text-xs text-[#BF5AF2] font-bold animate-pulse">Uploading...</span>' : ''}
+                    ${!isReadOnly ? `<button onclick="removeFile('${catId}', '${f.id}')" class="text-[#FF3B30] hover:text-white p-2 bg-transparent border-none cursor-pointer flex items-center justify-center transition">${Icons.close}</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateFileListUI(catId) {
+        const listEl = document.getElementById(`file-list-${catId}`);
+        if (listEl) listEl.innerHTML = generateFileListHTML(catId);
+    }
+
+    function renderFileCategories() {
+        const categories = [
+            { id: "general", label: "Event Checklist & General" },
+            { id: "marketing", label: "Marketing Requests" },
+            { id: "amazon", label: "Amazon Orders" }
+        ];
+
+        return categories.map(cat => `
+            <div class="bg-black/20 p-6 r-card border border-white/10">
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="font-bold text-base text-gray-300">${cat.label}</h3>
+                    ${!isReadOnly ? `<label class="cursor-pointer bg-white/10 hover:bg-white/20 border border-white/10 text-white px-5 py-2.5 r-btn text-xs font-bold transition">Upload File<input type="file" class="hidden file-input" data-cat="${cat.id}"></label>` : ''}
+                </div>
+                <div id="file-list-${cat.id}" class="space-y-3">
+                    ${generateFileListHTML(cat.id)}
+                </div>
+            </div>
+        `).join('');
     }
 
     function attachFileHandlers() {
@@ -1201,104 +1847,148 @@
             input.addEventListener('change', async (e) => {
                 const cat = e.target.dataset.cat;
                 const file = e.target.files[0];
-                if (!file || file.size > 25 * 1024 * 1024) return alert("File too large (>25MB)");
+                if (!file) return;
+                if (file.size > 25 * 1024 * 1024) return alert("File too large (>25MB)");
 
                 const tempId = 'f_' + Math.random().toString(36).substr(2, 9);
                 if (!tempFiles[cat]) tempFiles[cat] = [];
                 tempFiles[cat].push({ id: tempId, name: file.name, size: (file.size/1024).toFixed(1)+'KB', date: new Date().toLocaleDateString(), status: 'uploading' });
                 
-                renderFilesTab(cat); // Update ONLY the file tab container
+                if (editingEventId) {
+                    const ev = eventsData.find(x => x.id === editingEventId);
+                    if (ev) { ev.files = JSON.parse(JSON.stringify(tempFiles)); saveLocal(); }
+                }
+
+                // Update only the list part of the UI, keeping the input element intact!
+                updateFileListUI(cat); 
                 
                 const driveUrl = await uploadToDrive(file, () => {});
                 const target = tempFiles[cat].find(f => f.id === tempId);
                 if(target) {
                     if(driveUrl) { target.url = driveUrl; target.status = 'done'; }
                     else { target.status = 'error'; }
+                    
+                    if (editingEventId) {
+                        const ev = eventsData.find(x => x.id === editingEventId);
+                        if (ev) { ev.files = JSON.parse(JSON.stringify(tempFiles)); saveLocal(); }
+                    }
                 }
-                renderFilesTab(cat);
+                
+                updateFileListUI(cat);
+                e.target.value = ''; // Reset input to allow re-uploading the same file
             });
         });
     }
 
     function renderFilesTab(targetCat = null) {
-        // If specific category update is needed we could optimize, but here we re-render the file list part
         const container = document.getElementById('file-upload-container');
         if(!container) return;
-        
         container.innerHTML = renderFileCategories();
         attachFileHandlers();
     }
 
     window.removeFile = function(cat, fileId) {
         if (isReadOnly) return;
-        if(!confirm("Are you sure you want to delete this file link?")) return;
+        if(!confirm("Delete this file link?")) return;
         tempFiles[cat] = tempFiles[cat].filter(f => f.id !== fileId);
-        renderFilesTab();
+        
+        if (editingEventId) {
+            const ev = eventsData.find(e => e.id === editingEventId);
+            if (ev) { ev.files = JSON.parse(JSON.stringify(tempFiles)); saveLocal(); }
+        }
+        
+        updateFileListUI(cat);
     };
 
-    function openEventEditor(id, initialTab = 'details') {
+    window.autoSaveNotes = function(val) {
+        if (editingEventId && !isReadOnly) {
+            const ev = eventsData.find(e => e.id === editingEventId);
+            if (ev) {
+                ev.notes = val;
+                saveLocal();
+            }
+        }
+    };
+
+    // ==============================================================
+    // 8. EVENT MODAL LOGIC
+    // ==============================================================
+
+    window.openEventEditor = function(id, initialTab = 'details') {
         editingEventId = id;
         document.getElementById('event-modal').classList.remove('hidden');
         
         let data = id ? eventsData.find(e => e.id === id) : { name:'', deadlines:{} };
-        // Ensure deep copy of notes and files
         tempFiles = JSON.parse(JSON.stringify(data.files || { general:[], marketing:[], amazon:[] }));
         
-        // MODAL CONTENT GENERATION (Read-Only aware)
+        const evExpenses = id ? expensesData.filter(e => e.eventId === id) : [];
+        const totalCost = evExpenses.reduce((sum, e) => sum + (Number(e.cost) || 0), 0);
+        const remaining = (Number(data.budget) || 0) - totalCost;
+        const remainingColor = remaining < 0 ? 'text-[#FF3B30]' : 'text-white';
+        
         const disabledAttr = isReadOnly ? 'disabled' : '';
-        const roClass = isReadOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white';
-        const saveBtnClass = isReadOnly ? 'hidden' : 'w-full bg-purple-600 text-white py-3 rounded-xl hover:bg-purple-700 font-medium shadow-md transition transform active:scale-[0.99]';
+        const roClass = isReadOnly ? 'opacity-60 cursor-not-allowed' : '';
 
         document.getElementById('event-modal-content').innerHTML = `
-            <div id="form-tab-details" class="space-y-6">
+            <div id="form-tab-details" class="space-y-8">
                 <!-- DETAILS FORM -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-1 md:col-span-2"><label class="text-xs font-bold text-slate-500">Event Name</label><input id="form-name" ${disabledAttr} value="${data.name||''}" class="w-full px-3 py-2 border rounded ${roClass}"></div>
-                    <div><label class="text-xs font-bold text-slate-500">Date</label><input type="date" id="form-date" ${disabledAttr} value="${data.date||''}" class="w-full px-3 py-2 border rounded ${roClass}"></div>
-                    <div><label class="text-xs font-bold text-slate-500">Time</label><input id="form-time" ${disabledAttr} value="${data.time||''}" class="w-full px-3 py-2 border rounded ${roClass}"></div>
-                    <div><label class="text-xs font-bold text-slate-500">Location</label><input id="form-location" ${disabledAttr} value="${data.location||''}" class="w-full px-3 py-2 border rounded ${roClass}"></div>
-                    <div><label class="text-xs font-bold text-slate-500">Budget</label><input type="number" id="form-budget" ${disabledAttr} value="${data.budget||''}" class="w-full px-3 py-2 border rounded ${roClass}"></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded border">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="col-span-1 md:col-span-2"><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Event Name</label><input id="form-name" ${disabledAttr} value="${data.name||''}" class="w-full px-5 py-4 r-btn text-base ${roClass}"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Date</label><input type="date" id="form-date" ${disabledAttr} value="${data.date||''}" onchange="handleDateChange(this.value)" class="w-full px-5 py-4 r-btn text-base ${roClass}"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Time</label><input id="form-time" ${disabledAttr} value="${data.time||''}" class="w-full px-5 py-4 r-btn text-base ${roClass}"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Location</label><input id="form-location" ${disabledAttr} value="${data.location||''}" class="w-full px-5 py-4 r-btn text-base ${roClass}"></div>
                     <div>
-                        <label class="text-xs font-bold text-slate-500">Cart</label>
-                        <select id="form-cart" ${disabledAttr} class="w-full px-2 py-2 border rounded ${roClass}">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Budget</label>
+                        <input type="number" id="form-budget" ${disabledAttr} value="${data.budget||''}" class="w-full px-5 py-4 r-btn text-base ${roClass}">
+                        ${id ? `
+                        <div class="flex justify-between items-center mt-2 px-1">
+                            <span class="text-xs text-gray-500 font-medium">Spent: <span class="text-white font-mono">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></span>
+                            <span class="text-xs text-gray-500 font-medium">Left: <span class="${remainingColor} font-mono font-bold">$${remaining.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 bg-black/20 p-6 r-card border border-white/10 mt-8">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Cart</label>
+                        <select id="form-cart" ${disabledAttr} class="w-full px-4 py-3 appearance-none r-btn text-base ${roClass}">
                             <option>Caddy</option>
                             <option>Clubs Cart</option>
                             <option>None</option>
                         </select>
                     </div>
-                    <div><label class="text-xs font-bold text-slate-500">Contact</label><input id="form-contact" ${disabledAttr} value="${data.contact||''}" class="w-full px-2 py-2 border rounded ${roClass}"></div>
-                    <div><label class="text-xs font-bold text-slate-500">Status</label><select id="form-status" ${disabledAttr} class="w-full px-2 py-2 border rounded ${roClass}"><option>Submit</option><option>Pending</option><option>Approved</option></select></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Event Coordinator</label><input id="form-contact" ${disabledAttr} value="${data.contact||''}" class="w-full px-4 py-3 r-btn text-base ${roClass}"></div>
+                    <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Status</label><select id="form-status" ${disabledAttr} class="w-full px-4 py-3 appearance-none r-btn text-base ${roClass}"><option>Submit</option><option>Pending</option><option>Approved</option></select></div>
                 </div>
-                <div class="border-t pt-4">
-                    <h3 class="text-sm font-bold text-slate-700 mb-3">Deadlines</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="border-t border-white/10 pt-8 mt-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-base font-bold text-white">Deadlines</h3>
+                        ${!isReadOnly ? `<button id="btn-autofill" onclick="forceAutoFillDeadlines()" class="text-[10px] font-bold px-4 py-2 r-pill bg-[#0A84FF]/10 text-[#0A84FF] hover:bg-[#0A84FF]/20 transition border border-[#0A84FF]/30 uppercase tracking-wider">Auto-Fill All</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         ${MILESTONE_KEYS.map(k => {
                             const m = data.deadlines?.[k] || {};
-                            return `<div class="bg-white border rounded p-2"><div class="flex justify-between mb-1"><label class="text-xs font-bold">${columnLabels[k]||k}</label><input type="checkbox" id="c-${k}" ${m.completed?'checked':''} ${disabledAttr}></div><input type="date" id="d-${k}" ${disabledAttr} value="${m.date||''}" class="w-full text-xs border rounded mb-1 ${roClass}"><input id="a-${k}" ${disabledAttr} value="${m.assignee||''}" placeholder="Name" class="w-full text-xs border rounded ${roClass}"></div>`
+                            return `<div class="bg-black/20 border border-white/10 r-btn p-4 flex flex-col justify-between"><div class="flex justify-between mb-4 items-center"><label class="text-[10px] font-bold text-gray-300 uppercase tracking-wider">${columnLabels[k]||k}</label><input type="checkbox" id="c-${k}" ${m.completed?'checked':''} ${disabledAttr} class="w-5 h-5 rounded accent-[#0A84FF] cursor-pointer"></div><div><input type="date" id="d-${k}" ${disabledAttr} value="${m.date||''}" class="w-full text-sm px-3 py-2 mb-3 r-btn ${roClass}"><input id="a-${k}" ${disabledAttr} value="${m.assignee||''}" placeholder="Assignee Name" class="w-full text-sm px-3 py-2 r-btn ${roClass}"></div></div>`
                         }).join('')}
                     </div>
                 </div>
             </div>
 
             <!-- NOTES & FILES TAB -->
-            <div id="form-tab-files" class="hidden space-y-6">
+            <div id="form-tab-files" class="hidden space-y-8">
                 <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase mb-1">Event Notes</label>
-                    <textarea id="form-notes" ${disabledAttr} class="w-full p-3 border border-slate-300 rounded-lg h-32 text-sm focus:ring-2 focus:ring-purple-200 outline-none ${roClass}" placeholder="Add specific notes, gate codes, or reminders here...">${data.notes||''}</textarea>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Event Notes</label>
+                    <textarea id="form-notes" ${disabledAttr} onchange="autoSaveNotes(this.value)" class="w-full p-5 h-40 text-base r-btn ${roClass}" placeholder="Add specific notes, gate codes, or reminders here...">${data.notes||''}</textarea>
                 </div>
-                
-                <div class="border-t pt-4">
-                      <label class="text-xs font-bold text-slate-500 uppercase mb-3 block">Attachments</label>
-                      <div id="file-upload-container">
-                        <!-- Files injected here by renderFilesTab -->
+                <div class="border-t border-white/10 pt-8">
+                      <label class="text-base font-bold text-white mb-6 block">Attachments</label>
+                      <div id="file-upload-container" class="space-y-6">
+                        <!-- Files injected here -->
                       </div>
                 </div>
             </div>
         `;
         
-        // Update Footer button visibility
         const footer = document.getElementById('event-modal-footer');
         if(isReadOnly) footer.classList.add('hidden');
         else footer.classList.remove('hidden');
@@ -1306,15 +1996,51 @@
         if(data.cart) document.getElementById('form-cart').value = data.cart;
         if(data.status) document.getElementById('form-status').value = data.status;
         
-        // Initialize file list
         renderFilesTab();
-        
-        // Switch to requested tab
         window.switchTab(initialTab);
     }
-
-    window.openEventEditor = openEventEditor; // Explicit global attachment
     
+    window.handleDateChange = function(val) {
+        if (!val || isReadOnly) return;
+        const eventDate = new Date(val + 'T12:00:00'); // set strictly to avoid timezone shift
+        MILESTONE_KEYS.forEach(k => {
+            const dateInput = document.getElementById(`d-${k}`);
+            if (dateInput && !dateInput.value) { // Only auto-fill if empty
+                const offsetWeeks = milestoneOffsets[k] || 0;
+                const targetDate = new Date(eventDate);
+                targetDate.setDate(targetDate.getDate() - (offsetWeeks * 7));
+                dateInput.value = targetDate.toISOString().split('T')[0];
+            }
+        });
+    };
+
+    window.forceAutoFillDeadlines = function() {
+        if (isReadOnly) return;
+        const val = document.getElementById('form-date').value;
+        if (!val) {
+            const btn = document.getElementById('btn-autofill');
+            const oldText = btn.innerText;
+            btn.innerText = "Set Date First!";
+            btn.classList.add('text-[#FF3B30]', 'border-[#FF3B30]/30', 'bg-[#FF3B30]/10');
+            setTimeout(() => {
+                btn.innerText = oldText;
+                btn.classList.remove('text-[#FF3B30]', 'border-[#FF3B30]/30', 'bg-[#FF3B30]/10');
+            }, 2000);
+            return;
+        }
+        
+        const eventDate = new Date(val + 'T12:00:00');
+        MILESTONE_KEYS.forEach(k => {
+            const dateInput = document.getElementById(`d-${k}`);
+            if (dateInput) {
+                const offsetWeeks = milestoneOffsets[k] || 0;
+                const targetDate = new Date(eventDate);
+                targetDate.setDate(targetDate.getDate() - (offsetWeeks * 7));
+                dateInput.value = targetDate.toISOString().split('T')[0];
+            }
+        });
+    };
+
     window.closeEventModal = function() { document.getElementById('event-modal').classList.add('hidden'); };
 
     window.saveEvent = function() {
@@ -1324,39 +2050,28 @@
         
         const ev = {
             id: editingEventId || 'ev_'+Date.now(),
-            name, 
-            date: document.getElementById('form-date').value,
-            time: document.getElementById('form-time').value,
-            location: document.getElementById('form-location').value,
-            budget: Number(document.getElementById('form-budget').value),
-            cart: document.getElementById('form-cart').value,
-            contact: document.getElementById('form-contact').value,
-            status: document.getElementById('form-status').value,
-            notes: document.getElementById('form-notes').value, // Save Notes
-            attendance: editingEventId ? (eventsData.find(e=>e.id===editingEventId)?.attendance || 0) : 0,
-            deadlines: {},
-            files: tempFiles
+            name, date: document.getElementById('form-date').value, time: document.getElementById('form-time').value,
+            location: document.getElementById('form-location').value, budget: Number(document.getElementById('form-budget').value),
+            cart: document.getElementById('form-cart').value, contact: document.getElementById('form-contact').value,
+            status: document.getElementById('form-status').value, notes: document.getElementById('form-notes').value, 
+            attendance: editingEventId ? (eventsData.find(e=>e.id===editingEventId)?.attendance || 0) : 0, 
+            coverImage: editingEventId ? (eventsData.find(e=>e.id===editingEventId)?.coverImage || '') : '',
+            photosLink: editingEventId ? (eventsData.find(e=>e.id===editingEventId)?.photosLink || '') : '',
+            deadlines: {}, files: tempFiles
         };
         
         MILESTONE_KEYS.forEach(k => {
             ev.deadlines[k] = {
-                date: document.getElementById(`d-${k}`).value,
-                assignee: document.getElementById(`a-${k}`).value,
-                completed: document.getElementById(`c-${k}`).checked
+                date: document.getElementById(`d-${k}`).value, assignee: document.getElementById(`a-${k}`).value, completed: document.getElementById(`c-${k}`).checked
             };
         });
 
         if(editingEventId) {
             const idx = eventsData.findIndex(e=>e.id===editingEventId);
             if(idx !== -1) eventsData[idx] = ev;
-        } else {
-            eventsData.push(ev);
-        }
+        } else { eventsData.push(ev); }
         
-        saveLocal();
-        renderEvents();
-        renderBudgetView(); 
-        closeEventModal();
+        saveLocal(); renderEvents(); renderBudgetView(); renderCalendar(); closeEventModal();
     };
 
     window.toggleDeadline = function(id, k) {
@@ -1366,8 +2081,7 @@
             if(!ev.deadlines) ev.deadlines={};
             if(!ev.deadlines[k]) ev.deadlines[k]={};
             ev.deadlines[k].completed = !ev.deadlines[k].completed;
-            saveLocal();
-            renderEvents();
+            saveLocal(); renderEvents();
         }
     };
     
@@ -1379,31 +2093,55 @@
 
     window.deleteEvent = function(id) {
         if (isReadOnly) return;
-        if(confirm("Are you sure you want to delete this event? All associated data will be lost.")) {
+        if(confirm("Delete this event? All associated data will be lost.")) {
             eventsData = eventsData.filter(e=>e.id!==id);
-            saveLocal();
-            renderEvents();
-            renderBudgetView();
+            saveLocal(); renderEvents(); renderBudgetView(); renderCalendar();
         }
     }
 
-    // 8. Settings & Init
+    // ==============================================================
+    // 9. SETTINGS & TAB LOGIC
+    // ==============================================================
+
     window.openSettings = function() {
         document.getElementById('settings-modal').classList.remove('hidden');
-        document.getElementById('column-label-editor').innerHTML = MILESTONE_KEYS.map(k => `<div class="flex items-center gap-2 mb-2"><span class="w-24 text-xs font-bold">${k}</span><input id="set-${k}" value="${columnLabels[k]}" ${isReadOnly?'disabled class="read-only-input flex-1 border rounded px-2 py-1 text-sm"':'class="flex-1 border rounded px-2 py-1 text-sm"'}></div>`).join('');
+        document.getElementById('column-label-editor').innerHTML = MILESTONE_KEYS.map(k => `
+            <div class="flex items-center gap-3">
+                <span class="w-24 text-[10px] font-bold text-gray-300 uppercase tracking-wider truncate" title="${k}">${k}</span>
+                <input id="set-${k}" value="${columnLabels[k]}" ${isReadOnly?'disabled class="read-only-input flex-1 px-4 py-2.5 r-btn text-sm"':'class="flex-1 px-4 py-2.5 r-btn text-sm"'} placeholder="Label">
+                <input type="number" id="offset-${k}" value="${milestoneOffsets[k] !== undefined ? milestoneOffsets[k] : 1}" ${isReadOnly?'disabled class="read-only-input w-16 px-3 py-2.5 r-btn text-sm text-center"':'class="w-16 px-3 py-2.5 r-btn text-sm text-center"'} min="0" title="Weeks before event">
+            </div>
+        `).join('');
         document.getElementById('setting-app-name').value = appName;
-        if (isReadOnly) document.getElementById('setting-app-name').disabled = true;
+        document.getElementById('setting-app-password').value = '';
+        document.getElementById('setting-app-password').placeholder = masterPasswordHash ? "•••••••• (Password is Set)" : "Leave blank to disable lock screen...";
+        
+        if (isReadOnly) {
+            document.getElementById('setting-app-name').disabled = true;
+            document.getElementById('setting-app-password').disabled = true;
+        }
     };
+    
     window.closeSettings = function() { document.getElementById('settings-modal').classList.add('hidden'); };
+    
     window.saveSettings = function() {
         if (isReadOnly) return;
-        MILESTONE_KEYS.forEach(k => columnLabels[k] = document.getElementById(`set-${k}`).value);
+        MILESTONE_KEYS.forEach(k => {
+            columnLabels[k] = document.getElementById(`set-${k}`).value;
+            milestoneOffsets[k] = parseInt(document.getElementById(`offset-${k}`).value) || 0;
+        });
         appName = document.getElementById('setting-app-name').value; 
-        saveLocal();
-        renderTableHeader();
-        renderEvents();
-        renderAppTitle(); 
-        closeSettings();
+        
+        const newPass = document.getElementById('setting-app-password').value;
+        if (newPass !== '') {
+            masterPasswordHash = btoa(newPass);
+            localStorage.setItem('arts_auth_token', masterPasswordHash); // Update local session so they don't get locked out immediately
+        } else if (document.getElementById('setting-app-password').placeholder === "Leave blank to disable lock screen...") {
+            masterPasswordHash = '';
+            localStorage.removeItem('arts_auth_token');
+        }
+
+        saveLocal(); renderTableHeader(); renderEvents(); renderAppTitle(); closeSettings();
     };
 
     window.switchTab = function(tab) {
@@ -1415,25 +2153,20 @@
         if (!detailsTab || !filesTab) return;
 
         if (tab === 'details') {
-            detailsTab.classList.remove('hidden');
-            filesTab.classList.add('hidden');
-            btnDetails.classList.add('border-purple-600', 'text-purple-600');
-            btnDetails.classList.remove('border-transparent');
-            btnFiles.classList.remove('border-purple-600', 'text-purple-600');
-            btnFiles.classList.add('border-transparent');
+            detailsTab.classList.remove('hidden'); filesTab.classList.add('hidden');
+            btnDetails.classList.add('border-[#0A84FF]', 'bg-[#0A84FF]/10', 'text-[#0A84FF]'); btnDetails.classList.remove('border-transparent', 'text-gray-400', 'hover:bg-black/20');
+            btnFiles.classList.remove('border-[#0A84FF]', 'bg-[#0A84FF]/10', 'text-[#0A84FF]'); btnFiles.classList.add('border-transparent', 'text-gray-400', 'hover:bg-black/20', 'hover:text-white');
         } else {
-            detailsTab.classList.add('hidden');
-            filesTab.classList.remove('hidden');
-            btnFiles.classList.add('border-purple-600', 'text-purple-600');
-            btnFiles.classList.remove('border-transparent');
-            btnDetails.classList.remove('border-purple-600', 'text-purple-600');
-            btnDetails.classList.add('border-transparent');
+            detailsTab.classList.add('hidden'); filesTab.classList.remove('hidden');
+            btnFiles.classList.add('border-[#0A84FF]', 'bg-[#0A84FF]/10', 'text-[#0A84FF]'); btnFiles.classList.remove('border-transparent', 'text-gray-400', 'hover:bg-black/20');
+            btnDetails.classList.remove('border-[#0A84FF]', 'bg-[#0A84FF]/10', 'text-[#0A84FF]'); btnDetails.classList.add('border-transparent', 'text-gray-400', 'hover:bg-black/20', 'hover:text-white');
         }
     }
     
     // Ensure load
+    applyBackground(); // Apply immediately so the lock screen has it
     initApp();
-    console.log("App Loaded");
+    console.log("App Loaded - Pro Edition");
 
 </script>
 </body>
