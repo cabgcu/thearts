@@ -90,14 +90,7 @@
         }
 
         /* Top Navigation Components */
-        .brand h1 {
-            font-size: 1.4rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
-            background: var(--gradient-accent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .brand-stat { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; display: flex; align-items: center; gap: 8px;}
+        .brand-stat { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; display: flex; align-items: center; gap: 8px;}
         
         .loader {
             border: 2px solid rgba(255,255,255,0.2);
@@ -117,20 +110,22 @@
             background: rgba(255,255,255,0.06);
             border: 1px solid rgba(255,255,255,0.08);
             color: #fff;
-            height: 46px; width: 46px;
+            height: 40px; width: 40px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
             flex-shrink: 0;
         }
+        @media(min-width: 768px) { .btn-action-icon { height: 46px; width: 46px; } }
         .btn-action-icon:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
 
         .btn-stats { 
-            background: var(--gradient-accent); border: none; padding: 0 24px; 
+            background: var(--gradient-accent); border: none; padding: 0 16px; 
             box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); color: white; 
-            height: 46px; font-weight: 700; cursor: pointer; transition: 0.3s;
+            height: 40px; font-weight: 700; cursor: pointer; transition: 0.3s;
         }
+        @media(min-width: 768px) { .btn-stats { height: 46px; padding: 0 24px; } }
         .btn-stats:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
 
         /* General Dark Inputs */
@@ -172,6 +167,22 @@
         .cal-cell:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.2); }
         .cal-cell.faded { opacity: 0.3; }
         .cal-event { background: var(--gradient-accent); color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 4px 10px rgba(10, 132, 255, 0.3);}
+        
+        .cal-deadline {
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .cal-deadline:hover { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: rgba(255, 255, 255, 0.2); }
 
         /* Modal Base */
         .modal { position: fixed; inset: 0; z-index: 999; display: flex; justify-content: center; align-items: center; padding: 20px; }
@@ -202,9 +213,6 @@
 
         @media(max-width: 800px) {
             .app-container { padding: 0 10px; }
-            .topbar { position: relative; top: 0; flex-direction: column; gap: 20px; padding: 24px; margin-top: 10px; border-radius: 20px; }
-            .controls { width: 100%; justify-content: center; }
-            .control-item { padding: 0 16px; font-size: 0.85rem; }
             .modal { padding: 10px; }
             .modal-content { max-height: 95vh; border-radius: 24px; }
             .modal-header, .modal-footer { padding: 16px 20px; }
@@ -220,17 +228,25 @@
 <!-- ====================================================== -->
 <!-- AUTH / LOCK SCREEN -->
 <!-- ====================================================== -->
-<div id="auth-screen" class="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-5 transition-opacity duration-500" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));">
-    <div class="frosted r-card p-10 w-full max-w-[400px] flex flex-col items-center text-center shadow-[0_30px_60px_rgba(0,0,0,0.6)] border border-white/10">
-        <div class="w-20 h-20 r-pill flex items-center justify-center mb-6 text-white shadow-2xl border border-white/20" style="background: var(--gradient-accent);">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+<div id="auth-screen" class="fixed inset-0 z-[9999] flex flex-col justify-center items-center p-5 transition-opacity duration-500" style="background: rgba(0,0,0,0.3); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);">
+    <div class="frosted r-card p-8 sm:p-10 w-full max-w-[420px] flex flex-col items-center shadow-2xl">
+        
+        <!-- Minimalist Lock Icon -->
+        <div class="w-16 h-16 r-pill bg-white/5 border border-white/10 flex items-center justify-center mb-6 text-gray-400">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         </div>
-        <h2 class="text-2xl font-bold text-white mb-2" id="auth-title">App Locked</h2>
-        <p class="text-sm text-gray-400 mb-8" id="auth-subtitle">Enter your master password.</p>
+
+        <!-- Gradient App Title -->
+        <h1 id="auth-title" class="font-extrabold text-2xl sm:text-3xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none mb-2 text-center">Arts Events Manager</h1>
+        <p id="auth-subtitle" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-8 text-center">Authorized Access Only</p>
         
-        <input type="password" id="auth-password" class="w-full px-5 py-4 r-btn text-center text-xl tracking-widest mb-6 bg-black/40 border-white/10 focus:border-[#0A84FF] transition-all" placeholder="••••••••" onkeypress="if(event.key==='Enter') submitAuth()">
+        <!-- Glassy Password Input -->
+        <div class="w-full relative mb-6">
+            <input type="password" id="auth-password" class="w-full px-5 py-4 r-btn text-center text-xl tracking-[0.3em] font-mono transition-all duration-300" placeholder="••••••••" onkeypress="if(event.key==='Enter') submitAuth()">
+        </div>
         
-        <button onclick="submitAuth()" class="w-full text-white py-4 r-btn font-bold transition-all text-lg hover:-translate-y-0.5 shadow-[0_10px_25px_rgba(10,132,255,0.3)]" style="background: var(--gradient-accent);">
+        <!-- Matching App Action Button -->
+        <button onclick="submitAuth()" class="btn-modal r-btn text-lg w-full">
             Unlock Dashboard
         </button>
     </div>
@@ -239,72 +255,70 @@
 <div class="app-container" id="app-container">
 
     <!-- TOP BAR -->
-    <div class="frosted r-card mb-8 mt-4 sticky top-4 z-50 shadow-2xl w-full mx-auto overflow-hidden">
-        <div class="flex flex-row items-center gap-5 md:gap-6 px-5 md:px-6 py-4 overflow-x-auto hide-scrollbar w-full">
-            
-            <!-- Brand area -->
-            <div class="flex flex-col gap-1 flex-shrink-0">
-                <div class="flex items-center gap-3">
-                    <h1 id="app-title-display" class="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none">Arts Events Manager</h1>
-                    <!-- Year Dropdown -->
-                    <div class="relative flex items-center">
-                        <select id="year-selector" onchange="handleYearChange(this.value)" class="bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 border border-[#0A84FF]/20 r-pill pl-3 pr-8 py-1.5 text-xs font-bold text-[#0A84FF] outline-none cursor-pointer transition appearance-none shadow-sm">
-                            <!-- Populated by JS -->
-                        </select>
-                        <div class="absolute right-3 pointer-events-none text-[#0A84FF]">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </div>
+    <div class="frosted r-card mb-8 mt-4 sticky top-4 z-50 shadow-2xl w-full mx-auto flex flex-col xl:flex-row gap-4 p-4 md:p-5">
+        
+        <!-- Row 1 (Mobile) / Left (Desktop): Brand + Main Actions -->
+        <div class="flex justify-between items-center w-full xl:w-auto gap-4 flex-shrink-0">
+            <!-- Brand -->
+            <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                    <h1 id="app-title-display" class="font-extrabold text-xl sm:text-2xl bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2] m-0 tracking-tight leading-none truncate">Arts Events Manager</h1>
+                </div>
+                <div class="flex items-center gap-3 mt-1.5">
+                    <select id="year-selector" onchange="handleYearChange(this.value)" class="bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 border border-[#0A84FF]/20 r-pill px-2 py-1 text-[10px] sm:text-xs font-bold text-[#0A84FF] outline-none cursor-pointer transition appearance-none shadow-sm">
+                    </select>
+                    <div class="brand-stat !mt-0">
+                        <span id="sync-dot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                        <span id="sync-text" class="text-[10px] sm:text-xs">Connecting...</span>
                     </div>
                 </div>
-                <div class="text-[0.85rem] text-gray-400 font-medium flex items-center gap-2 mt-1">
-                    <span id="sync-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-                    <span id="sync-text">Connecting...</span>
-                </div>
             </div>
 
-            <!-- Flexible Spacer (pushes everything right on desktop) -->
-            <div class="flex-1 min-w-[10px]"></div>
-
-            <!-- Segmented Navigation Tabs -->
-            <div class="flex bg-black/40 p-1.5 r-pill border border-white/10 flex-shrink-0">
-                <button onclick="switchView('events')" id="nav-events" class="nav-tab active-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Events</button>
-                <button onclick="switchView('calendar')" id="nav-calendar" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Calendar</button>
-                <button onclick="switchView('budget')" id="nav-budget" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Budget</button>
-                <button onclick="switchView('photos')" id="nav-photos" class="nav-tab whitespace-nowrap px-5 py-2 text-sm font-bold text-gray-400 r-pill text-center">Photos</button>
-            </div>
-
-            <!-- Action Buttons Group (Utilities) -->
-            <div class="flex items-center gap-2.5 flex-shrink-0">
-                
-                <!-- Total Budget Display -->
-                <div class="flex items-center gap-2 px-4 py-2 r-pill border border-white/10 bg-black/20 h-[46px]">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider hidden sm:block">Budget</p>
-                    <p id="total-budget-display" class="text-lg font-bold text-white">$0</p>
-                </div>
-
-                <!-- Settings -->
+            <!-- Mobile Main Actions -->
+            <div class="flex xl:hidden items-center gap-2 flex-shrink-0">
                 <button onclick="openSettings()" class="btn-action-icon" title="Settings">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
-                
-                <!-- Download CSV -->
-                <button onclick="exportToCSV()" class="btn-action-icon" title="Export to CSV">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <button onclick="openEventEditor()" class="btn-stats r-pill flex items-center justify-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span class="text-xs sm:text-sm">Event</span>
                 </button>
+            </div>
+        </div>
 
-                <!-- Download PDF -->
-                <button onclick="downloadPDF()" class="btn-action-icon" title="Download Full Report PDF">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                </button>
-                
-                <!-- Add Event -->
-                <button onclick="openEventEditor()" class="btn-stats r-pill flex items-center justify-center gap-2 flex-shrink-0 ml-1">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    <span>New Event</span>
-                </button>
-                
-                <!-- Scroll Spacer so the right padding isn't cut off inside the scroll container -->
-                <div class="w-2 flex-shrink-0"></div>
+        <!-- Row 2 & 3 (Mobile) / Right (Desktop): Tabs and Utilities -->
+        <div class="flex flex-col md:flex-row items-center justify-between xl:justify-end gap-4 w-full min-w-0 flex-1">
+            
+            <!-- Segmented Navigation Tabs -->
+            <div class="flex w-full md:w-auto bg-black/40 p-1.5 r-pill border border-white/10 flex-shrink-0">
+                <button onclick="switchView('events')" id="nav-events" class="nav-tab active-tab flex-1 whitespace-nowrap px-2 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-400 r-pill text-center">Events</button>
+                <button onclick="switchView('calendar')" id="nav-calendar" class="nav-tab flex-1 whitespace-nowrap px-2 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-400 r-pill text-center">Calendar</button>
+                <button onclick="switchView('budget')" id="nav-budget" class="nav-tab flex-1 whitespace-nowrap px-2 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-400 r-pill text-center">Budget</button>
+                <button onclick="switchView('photos')" id="nav-photos" class="nav-tab flex-1 whitespace-nowrap px-2 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-400 r-pill text-center">Photos</button>
+            </div>
+
+            <!-- Utilities Group -->
+            <div class="flex items-center justify-between md:justify-end w-full md:w-auto gap-3 flex-shrink-0">
+                <!-- Total Budget Display -->
+                <div class="flex items-center gap-2 px-4 py-2 r-pill border border-white/10 bg-black/20 h-[40px] md:h-[46px] flex-1 md:flex-none justify-center">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Budget</p>
+                    <p id="total-budget-display" class="text-sm md:text-lg font-bold text-white">$0</p>
+                </div>
+
+                <!-- Export Actions -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button onclick="openSettings()" class="btn-action-icon hidden xl:flex" title="Settings">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                    <button onclick="exportToCSV()" class="btn-action-icon text-xs font-bold" title="Export to CSV">CSV</button>
+                    <button onclick="downloadPDF()" class="btn-action-icon text-xs font-bold" title="Download Full Report PDF">PDF</button>
+                    
+                    <!-- Desktop Add Event CTA -->
+                    <button onclick="openEventEditor()" class="btn-stats r-pill hidden xl:flex items-center justify-center gap-2 ml-1">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>New Event</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -328,14 +342,16 @@
         </div>
 
         <!-- Local Events Header -->
-        <div class="flex items-center gap-5 mb-6 px-1">
-            <h2 class="font-bold text-xl text-white">Event Dashboard</h2>
-            <div id="events-view-toggles" class="flex items-center bg-black/20 r-pill border border-white/10 p-1 h-[42px]">
-                <button onclick="setEventsView('list')" id="btn-view-list" class="px-4 h-full r-pill text-sm font-bold bg-white/10 text-white transition flex items-center justify-center outline-none" title="List View">
+        <div class="flex items-center justify-between gap-5 mb-6 px-1">
+            <h2 class="font-bold text-xl text-white hidden sm:block">Event Dashboard</h2>
+            <div id="events-view-toggles" class="flex items-center bg-black/20 r-pill border border-white/10 p-1 h-[42px] w-full sm:w-auto">
+                <button onclick="setEventsView('list')" id="btn-view-list" class="px-4 h-full flex-1 sm:flex-none r-pill text-sm font-bold bg-white/10 text-white transition flex items-center justify-center outline-none" title="List View">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    <span class="ml-2 sm:hidden">List View</span>
                 </button>
-                <button onclick="setEventsView('card')" id="btn-view-card" class="px-4 h-full r-pill text-sm font-bold bg-transparent text-gray-400 hover:text-white transition flex items-center justify-center outline-none" title="Grid View">
+                <button onclick="setEventsView('card')" id="btn-view-card" class="px-4 h-full flex-1 sm:flex-none r-pill text-sm font-bold bg-transparent text-gray-400 hover:text-white transition flex items-center justify-center outline-none" title="Grid View">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span class="ml-2 sm:hidden">Card View</span>
                 </button>
             </div>
         </div>
@@ -374,27 +390,27 @@
     <!-- VIEW: CALENDAR -->
     <!-- ====================================================== -->
     <div id="view-calendar" class="hidden mb-10">
-        <div class="frosted r-card p-6 md:p-8">
-            <div class="flex justify-between items-center mb-8">
-                <h2 id="calendar-month-display" class="font-bold text-2xl text-white">Month Year</h2>
-                <div class="flex items-center gap-3">
-                    <button onclick="changeMonth(-1)" class="w-10 h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10">
+        <div class="frosted r-card p-4 sm:p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6 sm:mb-8">
+                <h2 id="calendar-month-display" class="font-bold text-xl sm:text-2xl text-white">Month Year</h2>
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button onclick="changeMonth(-1)" class="w-8 sm:w-10 h-8 sm:h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10 outline-none">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <button onclick="changeMonth(1)" class="w-10 h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10">
+                    <button onclick="changeMonth(1)" class="w-8 sm:w-10 h-8 sm:h-10 r-btn bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border border-white/10 outline-none">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                 </div>
             </div>
             
-            <div class="cal-grid text-center mb-3 hidden md:grid">
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sun</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mon</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tue</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Wed</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Thu</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Fri</div>
-                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sat</div>
+            <div class="cal-grid text-center mb-2 sm:mb-3">
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sun</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mon</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Tue</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Wed</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Thu</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Fri</div>
+                <div class="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sat</div>
             </div>
             
             <div id="calendar-grid" class="cal-grid">
@@ -434,13 +450,13 @@
         <!-- 2. Monthly Budget Overview -->
         <div class="frosted r-card overflow-hidden" id="budget-overview-card">
             <div class="p-6 border-b border-white/10 flex justify-between items-center cursor-pointer transition hover:bg-white/5 outline-none" onclick="toggleBudgetBreakdown()">
-                <h2 class="font-bold text-xl flex items-center gap-3">
+                <h2 class="font-bold text-lg sm:text-xl flex items-center gap-3">
                     <span id="budget-caret" class="transform transition-transform duration-200 text-gray-400 flex items-center justify-center">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </span>
-                    Monthly Budget Breakdown
+                    Monthly Breakdown
                 </h2>
-                <span class="text-xs text-gray-400 bg-black/40 px-4 py-2 r-pill border border-white/10 font-bold tracking-wider uppercase">FY: July - June</span>
+                <span class="text-[10px] sm:text-xs text-gray-400 bg-black/40 px-3 sm:px-4 py-2 r-pill border border-white/10 font-bold tracking-wider uppercase">FY: July-June</span>
             </div>
             
             <div id="budget-breakdown-content" class="transition-all duration-300">
@@ -462,7 +478,7 @@
                 </div>
                 <!-- Add Month Button -->
                 <div class="p-5 border-t border-white/10 action-col text-center" id="add-month-container">
-                    <button onclick="addBudgetMonth()" class="text-sm font-bold text-[#BF5AF2] hover:text-white transition flex items-center gap-2 justify-center w-full">
+                    <button onclick="addBudgetMonth()" class="text-sm font-bold text-[#BF5AF2] hover:text-white transition flex items-center gap-2 justify-center w-full outline-none">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Custom Month
                     </button>
                 </div>
@@ -471,7 +487,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 3. Expense Entry Form -->
-            <div class="frosted r-card p-8 action-col flex flex-col justify-between" id="expense-form-card">
+            <div class="frosted r-card p-6 sm:p-8 action-col flex flex-col justify-between" id="expense-form-card">
                 <div>
                     <h3 class="font-bold text-xl mb-6 flex items-center gap-3">
                         <span class="bg-black/20 text-white p-2.5 r-btn border border-white/10 flex items-center justify-center">
@@ -515,13 +531,13 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="addExpense()" class="w-full mt-8 bg-white/10 border border-white/20 text-white py-4 r-btn font-bold hover:bg-white/20 transition text-lg shadow-lg">
+                <button onclick="addExpense()" class="w-full mt-8 bg-white/10 border border-white/20 text-white py-4 r-btn font-bold hover:bg-white/20 transition text-lg shadow-lg outline-none">
                     Submit Expense
                 </button>
             </div>
 
             <!-- 4. Recent Expenses List -->
-            <div class="frosted r-card flex flex-col h-[600px]" id="expenses-list-card">
+            <div class="frosted r-card flex flex-col h-[500px] lg:h-[600px]" id="expenses-list-card">
                 <div class="p-6 border-b border-white/10">
                     <h3 class="font-bold text-xl">Recent Expenses</h3>
                 </div>
@@ -550,8 +566,8 @@
     <div class="modal-bg" onclick="closeSettings()"></div>
     <div class="modal-content r-card" style="max-width: 550px;">
         <div class="modal-header">
-            <h2 class="text-2xl font-bold flex items-center gap-3">
-                <svg class="text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-3">
+                <svg class="text-gray-400 hidden sm:block" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 App Settings
             </h2>
             <button class="text-gray-400 hover:text-white bg-transparent border-none cursor-pointer p-2 flex items-center justify-center transition outline-none" onclick="closeSettings()">
@@ -576,11 +592,11 @@
             <div>
                 <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-white/10 pb-2">App Background</h3>
                 <div class="flex items-center gap-3">
-                    <label class="cursor-pointer bg-black/20 hover:bg-black/40 border border-white/10 text-white px-4 py-2.5 r-btn text-xs font-bold transition flex items-center justify-center flex-1">
+                    <label class="cursor-pointer bg-black/20 hover:bg-black/40 border border-white/10 text-white px-4 py-2.5 r-btn text-xs font-bold transition flex items-center justify-center flex-1 text-center">
                         Upload Custom Background
                         <input type="file" class="hidden" accept="image/*" onchange="handleBackgroundUpload(event)" id="bg-upload-input">
                     </label>
-                    <button onclick="clearBackground()" class="bg-[#FF3B30]/10 hover:bg-[#FF3B30]/20 text-[#FF3B30] border border-[#FF3B30]/30 px-4 py-2.5 r-btn text-xs font-bold transition">Clear</button>
+                    <button onclick="clearBackground()" class="bg-[#FF3B30]/10 hover:bg-[#FF3B30]/20 text-[#FF3B30] border border-[#FF3B30]/30 px-4 py-2.5 r-btn text-xs font-bold transition outline-none">Clear</button>
                 </div>
                 <div id="bg-upload-status" class="text-[10px] text-[#0A84FF] font-bold mt-2 text-center hidden"></div>
             </div>
@@ -596,7 +612,7 @@
         </div>
         
         <div class="modal-footer">
-            <button onclick="saveSettings()" class="btn-modal r-btn">Save Changes</button>
+            <button onclick="saveSettings()" class="btn-modal r-btn outline-none">Save Changes</button>
         </div>
     </div>
 </div>
@@ -611,14 +627,14 @@
         <!-- Modal Header -->
         <div class="modal-header flex-col items-start gap-5">
             <div class="flex justify-between items-center w-full">
-                <h2 id="event-modal-title" class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2]">Event Details</h2>
+                <h2 id="event-modal-title" class="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#0A84FF] to-[#BF5AF2]">Event Details</h2>
                 <button onclick="closeEventModal()" class="text-gray-400 hover:text-white bg-transparent border-none cursor-pointer p-1 flex items-center justify-center transition outline-none">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            <div class="flex gap-3 w-full">
-                <button id="tab-details" onclick="switchTab('details')" class="flex-1 py-3 text-sm font-bold r-btn transition border border-[#0A84FF] bg-[#0A84FF]/10 text-[#0A84FF] outline-none">Details</button>
-                <button id="tab-files" onclick="switchTab('files')" class="flex-1 py-3 text-sm font-bold r-btn transition border border-transparent text-gray-400 hover:bg-black/20 hover:text-white outline-none">Notes & Files</button>
+            <div class="flex gap-2 sm:gap-3 w-full">
+                <button id="tab-details" onclick="switchTab('details')" class="flex-1 py-2 sm:py-3 text-xs sm:text-sm font-bold r-btn transition border border-[#0A84FF] bg-[#0A84FF]/10 text-[#0A84FF] outline-none">Details</button>
+                <button id="tab-files" onclick="switchTab('files')" class="flex-1 py-2 sm:py-3 text-xs sm:text-sm font-bold r-btn transition border border-transparent text-gray-400 hover:bg-black/20 hover:text-white outline-none">Notes & Files</button>
             </div>
         </div>
 
@@ -629,7 +645,7 @@
 
         <!-- Modal Footer -->
         <div class="modal-footer" id="event-modal-footer">
-            <button onclick="saveEvent()" class="btn-modal r-btn text-lg">Save Event</button>
+            <button onclick="saveEvent()" class="btn-modal r-btn text-lg outline-none">Save Event</button>
         </div>
     </div>
 </div>
@@ -758,10 +774,8 @@
         await loadMasterIndex(); // Loads the list of years AND the master password
 
         if (!masterPasswordHash) {
-            // No password set globally, unlock immediately
             unlockApp();
         } else {
-            // Check local session
             const localAuth = localStorage.getItem('arts_auth_token');
             if (localAuth === masterPasswordHash) {
                 unlockApp();
@@ -774,7 +788,7 @@
 
     window.submitAuth = function() {
         const input = document.getElementById('auth-password').value;
-        const hashedInput = btoa(input); // simple obfuscation for local comparison
+        const hashedInput = btoa(input); 
         
         if (!masterPasswordHash || hashedInput === masterPasswordHash) {
             localStorage.setItem('arts_auth_token', hashedInput);
@@ -787,10 +801,10 @@
             const passInput = document.getElementById('auth-password');
             passInput.value = '';
             passInput.placeholder = 'Incorrect Password';
-            passInput.classList.add('border-[#FF3B30]', 'bg-[#FF3B30]/10');
+            passInput.classList.add('!border-[#FF3B30]', '!bg-[#FF3B30]/20');
             setTimeout(() => {
                 passInput.placeholder = '••••••••';
-                passInput.classList.remove('border-[#FF3B30]', 'bg-[#FF3B30]/10');
+                passInput.classList.remove('!border-[#FF3B30]', '!bg-[#FF3B30]/20');
             }, 1500);
         }
     };
@@ -879,6 +893,7 @@
     
     window.downloadPDF = function() {
         const btn = document.querySelector('button[onclick="downloadPDF()"]');
+        if(!btn) return;
         const originalHTML = btn.innerHTML;
         btn.innerHTML = "⏳";
         btn.disabled = true;
@@ -1057,7 +1072,7 @@
         widget.classList.remove('hidden');
         upcoming.sort((a,b) => a.diff - b.diff);
         
-        // Show up to top 8 items
+        // Show top 8 items
         const topItems = upcoming.slice(0, 8);
         
         list.innerHTML = topItems.map(item => {
@@ -1122,9 +1137,6 @@
             const remaining = (Number(ev.budget) || 0) - totalCost;
             const remainingColor = remaining < 0 ? 'text-[#FF3B30]' : 'text-white';
 
-            // ------------------------------------
-            // 1. Build Table Row
-            // ------------------------------------
             const tr = document.createElement('tr');
             
             let html = `
@@ -1191,12 +1203,8 @@
             tr.innerHTML = html;
             tbody.appendChild(tr);
 
-            // ------------------------------------
-            // 2. Build Grid Card (Preview Mode)
-            // ------------------------------------
             const card = document.createElement('div');
             card.className = "frosted r-card flex flex-col overflow-hidden";
-            
             const bgImage = ev.coverImage || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22225%22%20viewBox%3D%220%200%20400%20225%22%3E%3Crect%20fill%3D%22%23111%22%20width%3D%22400%22%20height%3D%22225%22%2F%3E%3C%2Fsvg%3E';
 
             card.innerHTML = `
@@ -1278,16 +1286,32 @@
 
         let html = '';
 
-        // Previous Month fading cells
         for (let i = 0; i < firstDay; i++) {
             let d = daysInPrevMonth - firstDay + i + 1;
             html += `<div class="cal-cell faded"><span class="text-xs font-bold text-gray-500">${d}</span></div>`;
         }
 
-        // Current Month
         for (let i = 1; i <= daysInMonth; i++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            
+            // 1. Find Events on this day
             const dayEvents = eventsData.filter(e => e.date === dateStr);
+            
+            // 2. Find Deadlines on this day
+            let dayDeadlines = [];
+            eventsData.forEach(ev => {
+                MILESTONE_KEYS.forEach(k => {
+                    let m = ev.deadlines?.[k];
+                    if (m && m.date === dateStr) {
+                        dayDeadlines.push({
+                            evId: ev.id,
+                            evName: ev.name,
+                            taskName: columnLabels[k] || k,
+                            completed: m.completed
+                        });
+                    }
+                });
+            });
             
             let isToday = false;
             const today = new Date();
@@ -1295,14 +1319,26 @@
 
             let cellContent = `<div class="flex justify-between items-start mb-2"><span class="text-sm font-bold ${isToday ? 'text-[#0A84FF]' : 'text-gray-300'}">${i}</span></div>`;
             
+            // Render main events
             dayEvents.forEach(ev => {
                 cellContent += `<div onclick="openEventEditor('${ev.id}')" class="cal-event" title="${ev.name}">${ev.name}</div>`;
+            });
+
+            // Render deadlines underneath
+            dayDeadlines.forEach(dl => {
+                let dotColor = dl.completed ? 'bg-[#34C759]' : 'bg-[#FFD60A]';
+                let strikeClass = dl.completed ? 'line-through opacity-40' : '';
+                cellContent += `
+                    <div onclick="openEventEditor('${dl.evId}')" class="cal-deadline ${strikeClass}" title="${dl.taskName} (${dl.evName})">
+                        <span class="w-1.5 h-1.5 rounded-full ${dotColor} inline-block mr-1.5 flex-shrink-0"></span>
+                        <span class="truncate">${dl.taskName} - ${dl.evName}</span>
+                    </div>
+                `;
             });
 
             html += `<div class="cal-cell ${isToday ? 'border-[#0A84FF]/50 bg-[#0A84FF]/5' : ''}">${cellContent}</div>`;
         }
 
-        // Next Month fading cells
         const totalCells = firstDay + daysInMonth;
         const remainderCells = 7 - (totalCells % 7);
         if (remainderCells < 7) {
@@ -1525,19 +1561,6 @@
         });
     }
 
-    window.updateEventPhoto = function(id, field, value) {
-        if (isReadOnly) return;
-        const ev = eventsData.find(e => e.id === id);
-        if (ev) {
-            ev[field] = value;
-            saveLocal();
-            if (field === 'coverImage') {
-                renderPhotosView();
-                renderEvents(); 
-            }
-        }
-    };
-
     // ==============================================================
     // SYNC & CLOUD LOGIC
     // ==============================================================
@@ -1607,7 +1630,7 @@
             dot.className = "loader";
             text.innerText = "Syncing...";
         } else {
-            dot.className = "w-2 h-2 rounded-full bg-[#0A84FF] shadow-[0_0_8px_rgba(10,132,255,0.5)]";
+            dot.className = "w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-[#0A84FF] shadow-[0_0_8px_rgba(10,132,255,0.5)]";
             text.innerText = "Live";
         }
     }
@@ -1701,35 +1724,6 @@
     // 7. FILE UPLOADS / BACKGROUND
     // ==============================================================
 
-    window.handleBackgroundUpload = async function(e) {
-        if (isReadOnly) return;
-        const file = e.target.files[0];
-        const statusEl = document.getElementById('bg-upload-status');
-        
-        if (!file) return;
-        if (file.size > 25 * 1024 * 1024) {
-            if (statusEl) { statusEl.innerText = "File too large (>25MB)"; statusEl.classList.remove('hidden'); statusEl.classList.replace('text-[#0A84FF]', 'text-[#FF3B30]'); }
-            return;
-        }
-        
-        if (statusEl) { 
-            statusEl.innerText = "Uploading background..."; 
-            statusEl.classList.remove('hidden'); 
-            statusEl.classList.replace('text-[#FF3B30]', 'text-[#0A84FF]');
-        }
-        
-        const url = await uploadToDrive(file, (msg) => {
-            if (statusEl) statusEl.innerText = msg;
-        });
-        
-        if (url) {
-            appBackgroundImage = url;
-            applyBackground();
-            saveLocal();
-            if (statusEl) setTimeout(() => statusEl.classList.add('hidden'), 2000);
-        }
-    };
-
     window.clearBackground = function() {
         if (isReadOnly) return;
         appBackgroundImage = '';
@@ -1751,9 +1745,8 @@
         }
     }
 
-    // --- CLIENT SIDE IMAGE COMPRESSION ---
     async function compressImage(file) {
-        if (!file.type.startsWith('image/')) return file; // Skip non-images (like PDFs)
+        if (!file.type.startsWith('image/')) return file; 
         
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -1779,7 +1772,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Compress to JPEG at 70% quality to save massive space
                     canvas.toBlob((blob) => {
                         const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
                         const newFile = new File([blob], newFileName, { type: 'image/jpeg', lastModified: Date.now() });
@@ -1802,7 +1794,6 @@
             statusEl.classList.replace('text-[#FF3B30]', 'text-[#0A84FF]');
         }
 
-        // Compress image before checking final size
         file = await compressImage(file);
 
         if (file.size > 5 * 1024 * 1024) {
@@ -1927,7 +1918,6 @@
                 let file = e.target.files[0];
                 if (!file) return;
 
-                // Compress if it's an image
                 file = await compressImage(file);
 
                 if (file.size > 5 * 1024 * 1024) return alert("File too large after compression (>5MB). Please upload a smaller document.");
@@ -1941,7 +1931,6 @@
                     if (ev) { ev.files = JSON.parse(JSON.stringify(tempFiles)); saveLocal(); }
                 }
 
-                // Update only the list part of the UI, keeping the input element intact!
                 updateFileListUI(cat); 
                 
                 const driveUrl = await uploadToDrive(file, () => {});
@@ -1957,7 +1946,7 @@
                 }
                 
                 updateFileListUI(cat);
-                e.target.value = ''; // Reset input to allow re-uploading the same file
+                e.target.value = ''; 
             });
         });
     }
@@ -2210,7 +2199,7 @@
         const newPass = document.getElementById('setting-app-password').value;
         if (newPass !== '') {
             masterPasswordHash = btoa(newPass);
-            localStorage.setItem('arts_auth_token', masterPasswordHash); // Update local session so they don't get locked out immediately
+            localStorage.setItem('arts_auth_token', masterPasswordHash); 
         } else if (document.getElementById('setting-app-password').placeholder === "Leave blank to disable lock screen...") {
             masterPasswordHash = '';
             localStorage.removeItem('arts_auth_token');
@@ -2239,7 +2228,7 @@
     }
     
     // Ensure load
-    applyBackground(); // Apply immediately so the lock screen has it
+    applyBackground(); 
     initApp();
     console.log("App Loaded - Pro Edition");
 
