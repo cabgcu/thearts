@@ -564,7 +564,7 @@
 <!-- ====================================================== -->
 <!-- SETTINGS MODAL -->
 <!-- ====================================================== -->
-<div id="settings-modal" class="hidden modal">
+<div id="settings-modal" class="hidden modal z-[10000]">
     <div class="modal-bg" onclick="closeSettings()"></div>
     <div class="modal-content r-card" style="max-width: 550px;">
         <div class="modal-header">
@@ -721,6 +721,7 @@
     let appIconImage = localStorage.getItem('arts_app_icon') || '';
     let masterPasswordHash = ''; 
     let isUnlocked = false;
+    let syncSafe = false; // SAFEGUARD: Forbids uploading to Supabase if data hasn't successfully downloaded
     
     const DEFAULT_BUDGET_MONTHS = [
         { name: "July", allocated: 0 }, { name: "August", allocated: 13000 }, { name: "September", allocated: 5600 },
@@ -816,7 +817,7 @@
     // ==============================================================
     
     async function initApp() {
-        await loadMasterIndex(); // Loads the list of years AND the master password
+        await loadMasterIndex(); 
 
         if (!masterPasswordHash) {
             unlockApp();
@@ -1628,10 +1629,17 @@
     window.handleYearChange = async function(val) {
         if (isReadOnly) return alert("Read-Only mode.");
         
+        // 1. HARD STOP all syncs to prevent race conditions during transition
+        if (syncInterval) clearInterval(syncInterval);
+        isSyncing = false; // Kill any existing network locks
+        syncSafe = false;  // LATCH: Disallow saving empty state to cloud
+        
         if (val === 'NEW_YEAR') {
             const newYear = prompt("Enter new academic year (e.g., 2026-2027):");
             if (!newYear) {
                 renderYearSelector(); 
+                syncSafe = true;
+                startCloudSync(); // Resume sync loop
                 return;
             }
             if (!availableYears.includes(newYear)) {
@@ -1639,22 +1647,54 @@
                 availableYears.sort();
             }
             currentYear = newYear;
+            
+            eventsData = [];
+            expensesData = [];
+            budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
+            
+            // Deliberate creation: Safe to save to cloud
+            syncSafe = true;
+            saveLocal(true); 
+            
+            renderYearSelector();
+            renderEvents();
+            renderBudgetView();
+            renderPhotosView();
+            renderCalendar();
+            
+            startCloudSync();
         } else {
             currentYear = val;
+            localStorage.setItem('arts_current_year', currentYear);
+            
+            // 2. Lock UI visually so you know it is safely fetching
+            const appCont = document.getElementById('app-container');
+            if (appCont) {
+                appCont.style.opacity = '0.5';
+                appCont.style.pointerEvents = 'none';
+            }
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            if (dot) dot.className = "loader";
+            if (text) text.innerText = "Downloading...";
+            
+            // DO NOT clear arrays here anymore. Let the old data stay on screen until new data arrives to prevent flashing empty arrays!
+            renderYearSelector();
+            
+            // 3. Explicitly await the fresh cloud load
+            await loadFromCloud(true);
+            
+            // 4. Force UI unlock
+            if (appCont) {
+                appCont.style.opacity = '1';
+                appCont.style.pointerEvents = 'auto';
+            }
+            if (dot) dot.className = "w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-[#0A84FF] shadow-[0_0_8px_rgba(10,132,255,0.5)]";
+            if (text) text.innerText = "Live";
+            
+            // 5. Resume normal background sync
+            startCloudSync();
         }
-        
-        eventsData = [];
-        expensesData = [];
-        budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
-        
-        saveLocal(true); 
-        
-        renderYearSelector();
-        renderEvents();
-        renderBudgetView();
-        renderPhotosView();
-        renderCalendar();
-        await loadFromCloud(); 
     };
 
     function renderYearSelector() {
@@ -1713,14 +1753,25 @@
     
     async function syncToCloud() {
         if (!SUPABASE_URL || isReadOnly) return;
+        if (!syncSafe) return; // SAFEGUARD: Prevent accidental data wipes
+        if (isSyncing) return; // Prevent overlapping syncs
+        
         isSyncing = true; updateSyncUI();
+        
+        // Snapshot current state to prevent mid-sync variable changes
+        const snapYear = currentYear;
+        const snapEvents = JSON.parse(JSON.stringify(eventsData));
+        const snapExpenses = JSON.parse(JSON.stringify(expensesData));
+        const snapBudgets = JSON.parse(JSON.stringify(budgetData));
+        const snapSettings = { appName, columnLabels, milestoneOffsets, appBackgroundImage, appIconImage };
+
         try {
             await _supabase.from('app_state').upsert({
-                id: `state_${currentYear}`,
-                events: eventsData,
-                expenses: expensesData,
-                budgets: budgetData,
-                settings: { appName: appName, columnLabels: columnLabels, milestoneOffsets: milestoneOffsets, appBackgroundImage: appBackgroundImage, appIconImage: appIconImage }
+                id: `state_${snapYear}`,
+                events: snapEvents,
+                expenses: snapExpenses,
+                budgets: snapBudgets,
+                settings: snapSettings
             });
             await _supabase.from('app_state').upsert({
                 id: 'master_index',
@@ -1730,8 +1781,10 @@
         finally { setTimeout(() => { isSyncing = false; updateSyncUI(); }, 1000); }
     }
 
-    async function loadFromCloud() {
-        if (!SUPABASE_URL || isSyncing || isReadOnly) return;
+    async function loadFromCloud(force = false) {
+        if (!SUPABASE_URL || isReadOnly) return;
+        if (isSyncing && !force) return;
+
         try {
             const { data: indexData } = await _supabase.from('app_state').select('settings').eq('id', 'master_index').single();
             if (indexData && indexData.settings && indexData.settings.availableYears) {
@@ -1746,16 +1799,31 @@
                 }
             }
 
-            const { data, error } = await _supabase.from('app_state').select('*').eq('id', `state_${currentYear}`).single();
+            const targetYear = currentYear; // Lock target year for safety
+            const { data, error } = await _supabase.from('app_state').select('*').eq('id', `state_${targetYear}`).single();
+            
             if (error && error.code !== 'PGRST116') { 
                 console.error("Supabase Load Error:", error);
+                if (force) alert("Network interrupted. Please refresh the page to see your data.");
                 return;
             }
-            if (data) {
+            
+            // Download succeeded or returned nothing gracefully! Mark as safe to sync.
+            syncSafe = true; 
+            
+            // Ensure user hasn't switched years again while we were downloading
+            if (data && currentYear === targetYear) {
                 let changed = false;
-                if (JSON.stringify(eventsData) !== JSON.stringify(data.events || [])) { eventsData = data.events || []; changed = true; }
-                if (JSON.stringify(expensesData) !== JSON.stringify(data.expenses || [])) { expensesData = data.expenses || []; changed = true; }
-                if (JSON.stringify(budgetData) !== JSON.stringify(data.budgets || [])) { budgetData = data.budgets || JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS)); changed = true; }
+                
+                // Parse cleanly to avoid memory leaks
+                const incomingEvents = data.events || [];
+                const incomingExpenses = data.expenses || [];
+                const incomingBudgets = data.budgets || JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
+
+                if (JSON.stringify(eventsData) !== JSON.stringify(incomingEvents)) { eventsData = incomingEvents; changed = true; }
+                if (JSON.stringify(expensesData) !== JSON.stringify(incomingExpenses)) { expensesData = incomingExpenses; changed = true; }
+                if (JSON.stringify(budgetData) !== JSON.stringify(incomingBudgets)) { budgetData = incomingBudgets; changed = true; }
+                
                 if (data.settings) {
                     if (data.settings.appName && data.settings.appName !== appName) { appName = data.settings.appName; changed = true; }
                     if (data.settings.columnLabels && JSON.stringify(columnLabels) !== JSON.stringify(data.settings.columnLabels)) { columnLabels = data.settings.columnLabels; changed = true; }
@@ -1772,11 +1840,22 @@
                     }
                 }
 
-                if (changed && isUnlocked) {
+                // If 'force' is true, ALWAYS re-render to guarantee screen matches memory
+                if ((changed || force) && isUnlocked) {
                     renderEvents(); renderBudgetView(); renderPhotosView(); renderAppTitle(); renderTableHeader(); renderCalendar();
                 }
+            } else if (!data && force && currentYear === targetYear) {
+                // If we forced a load on a completely new year that has no data yet, empty the screen safely
+                eventsData = [];
+                expensesData = [];
+                budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
+                renderEvents(); renderBudgetView(); renderPhotosView(); renderAppTitle(); renderTableHeader(); renderCalendar();
             }
-        } catch (e) { console.error("Load Error", e); }
+
+        } catch (e) { 
+            console.error("Load Error", e); 
+            if (force) alert("Network interrupted. Please refresh the page to see your data.");
+        }
     }
 
     function saveLocal(triggerSync = true) {
