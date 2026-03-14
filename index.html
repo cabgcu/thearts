@@ -665,6 +665,32 @@
     </div>
 </div>
 
+<!-- ====================================================== -->
+<!-- FILE PREVIEW MODAL -->
+<!-- ====================================================== -->
+<div id="file-preview-modal" class="hidden modal z-[10000]">
+    <div class="modal-bg" onclick="closeFilePreview()"></div>
+    <div class="modal-content r-card !max-w-5xl !h-[85vh] flex flex-col !p-0 shadow-[0_50px_100px_rgba(0,0,0,0.8)] border border-white/20">
+        <!-- Preview Header -->
+        <div class="modal-header border-b border-white/10 bg-black/40 backdrop-blur-xl">
+            <h2 id="file-preview-title" class="text-lg sm:text-xl font-bold text-white truncate pr-4">File Preview</h2>
+            <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                <a id="file-preview-download" href="#" target="_blank" class="text-[10px] sm:text-xs font-bold text-[#0A84FF] bg-[#0A84FF]/10 px-3 py-2 r-pill border border-[#0A84FF]/30 hover:bg-[#0A84FF]/20 transition flex items-center gap-2 uppercase tracking-wider outline-none" download>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download
+                </a>
+                <button onclick="closeFilePreview()" class="text-gray-400 hover:text-[#FF3B30] bg-black/20 hover:bg-[#FF3B30]/10 border border-transparent hover:border-[#FF3B30]/20 r-pill p-2 flex items-center justify-center transition outline-none">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Preview Content -->
+        <div id="file-preview-body" class="flex-1 bg-black/80 relative overflow-hidden flex items-center justify-center p-4 sm:p-8">
+            <!-- Preview elements injected here -->
+        </div>
+    </div>
+</div>
+
 <script>
     // ==============================================================
     // 1. STATE & CONFIG
@@ -2004,20 +2030,21 @@
             return '<div class="text-center py-8 border-2 border-dashed border-white/10 r-btn text-sm text-gray-500 font-medium">No files uploaded yet</div>';
         }
         return tempFiles[catId].map(f => `
-            <div class="bg-black/40 p-4 r-btn border border-white/10 flex justify-between items-center">
-                <div class="flex items-center gap-4 overflow-hidden">
-                    <span class="text-gray-400 flex items-center justify-center">${Icons.file}</span>
-                    <div class="min-w-0">
+            <div class="bg-black/40 p-4 r-btn border border-white/10 flex justify-between items-center gap-3">
+                <div class="flex items-center gap-3 sm:gap-4 overflow-hidden flex-1">
+                    <span class="text-gray-400 flex items-center justify-center flex-shrink-0">${Icons.file}</span>
+                    <div class="min-w-0 flex-1">
                         <div class="text-sm font-bold text-white truncate">
-                            ${f.url ? `<a href="${f.url}" target="_blank" class="text-[#0A84FF] hover:underline">${f.name}</a>` : f.name}
+                            ${f.url ? `<button type="button" onclick="openFilePreview('${f.url}', '${f.name.replace(/'/g, "\\'")}')" class="text-[#0A84FF] hover:underline text-left truncate block w-full bg-transparent border-none p-0 cursor-pointer outline-none" title="${f.name}">${f.name}</button>` : f.name}
                         </div>
-                        <div class="text-xs text-gray-500 font-medium mt-0.5">${f.size || 'Drive File'} • ${f.date}</div>
+                        <div class="text-[10px] sm:text-xs text-gray-500 font-medium mt-1 uppercase tracking-wider">${f.size || 'Drive File'} • ${f.date}</div>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    ${f.status === 'uploading' ? '<span class="text-xs text-[#BF5AF2] font-bold animate-pulse">Uploading...</span>' : ''}
-                    ${f.status === 'error' ? '<span class="text-xs text-[#FF3B30] font-bold">Failed</span>' : ''}
-                    ${!isReadOnly ? `<button onclick="removeFile('${catId}', '${f.id}')" class="text-[#FF3B30] hover:text-white p-2 bg-transparent border-none cursor-pointer flex items-center justify-center transition">${Icons.close}</button>` : ''}
+                <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                    ${f.status === 'uploading' ? '<span class="text-xs text-[#BF5AF2] font-bold animate-pulse px-2">Uploading...</span>' : ''}
+                    ${f.status === 'error' ? '<span class="text-xs text-[#FF3B30] font-bold px-2">Failed</span>' : ''}
+                    ${!isReadOnly && f.status !== 'uploading' ? `<button type="button" onclick="renameFile('${catId}', '${f.id}')" class="text-gray-400 hover:text-white p-2 bg-transparent border-none cursor-pointer flex items-center justify-center transition outline-none" title="Rename File">${Icons.edit}</button>` : ''}
+                    ${!isReadOnly ? `<button type="button" onclick="removeFile('${catId}', '${f.id}')" class="text-[#FF3B30] hover:text-white p-2 bg-transparent border-none cursor-pointer flex items-center justify-center transition outline-none" title="Delete File">${Icons.close}</button>` : ''}
                 </div>
             </div>
         `).join('');
@@ -2062,9 +2089,20 @@
                 let file = e.target.files[0];
                 if (!file) return;
 
-                file = await compressImage(file);
+                const isImage = file.type && file.type.startsWith('image/');
+                
+                // Only attempt to compress if it's an actual image
+                if (isImage) {
+                    file = await compressImage(file);
+                }
 
-                if (file.size > 5 * 1024 * 1024) return alert("File too large after compression (>5MB). Please upload a smaller document.");
+                // Images must be <5MB after compression. Documents can be up to 15MB.
+                const maxSize = isImage ? 5 * 1024 * 1024 : 15 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert(`File too large! ${isImage ? 'Images must be <5MB.' : 'Documents must be <15MB.'}`);
+                    e.target.value = '';
+                    return;
+                }
 
                 const tempId = 'f_' + Math.random().toString(36).substr(2, 9);
                 if (!tempFiles[cat]) tempFiles[cat] = [];
@@ -2095,9 +2133,14 @@
         });
     }
 
-    window.removeFile = function(cat, fileId) {
+    window.removeFile = async function(cat, fileId) {
         if (isReadOnly) return;
-        if(!confirm("Delete this file link?")) return;
+        if(!confirm("Permanently delete this file? This will remove it from cloud storage.")) return;
+        
+        // Find the file to get its URL before we remove it from the array
+        const fileToDel = tempFiles[cat].find(f => f.id === fileId);
+
+        // Remove from local UI array
         tempFiles[cat] = tempFiles[cat].filter(f => f.id !== fileId);
         
         if (editingEventId) {
@@ -2106,6 +2149,22 @@
         }
         
         updateFileListUI(cat);
+
+        // Actually delete the physical file from the Supabase bucket to free up quota
+        if (fileToDel && fileToDel.url) {
+            try {
+                const urlPath = new URL(fileToDel.url).pathname;
+                // Supabase URLs look like: /storage/v1/object/public/files/uploads/filename.jpg
+                const pathParts = urlPath.split('/public/files/');
+                if (pathParts.length > 1) {
+                    const filePath = decodeURIComponent(pathParts[1]); // Decode in case of spaces in filename
+                    const { error } = await _supabase.storage.from('files').remove([filePath]);
+                    if (error) console.error("Failed to wipe from Supabase bucket:", error.message);
+                }
+            } catch (e) {
+                console.error("Error parsing URL or deleting:", e);
+            }
+        }
     };
 
     window.autoSaveNotes = function(val) {
@@ -2117,6 +2176,95 @@
             }
         }
     };
+
+    // ==============================================================
+    // NEW: FILE PREVIEWER & RENAMING
+    // ==============================================================
+
+    window.openFilePreview = function(url, name) {
+        if (!url) return alert("File is not uploaded yet.");
+        
+        document.getElementById('file-preview-title').innerText = name;
+        document.getElementById('file-preview-download').href = url;
+        
+        const body = document.getElementById('file-preview-body');
+        // Show Loading state
+        body.innerHTML = '<div class="loader" style="width: 40px; height: 40px; border-width: 4px; border-top-color: #0A84FF;"></div>';
+        
+        document.getElementById('file-preview-modal').classList.remove('hidden');
+
+        // Extract extension safely
+        const extMatch = name.match(/\.([^\.]+)$/);
+        const ext = extMatch ? extMatch[1].toLowerCase() : '';
+        const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+        
+        // 1. Image Preview
+        if (imgExts.includes(ext)) {
+            const img = new Image();
+            img.className = "max-w-full max-h-full object-contain shadow-2xl rounded-xl border border-white/10";
+            img.onload = () => { body.innerHTML = ''; body.appendChild(img); };
+            img.onerror = () => { body.innerHTML = '<p class="text-[#FF3B30] font-bold text-center">Preview could not be loaded.<br><span class="text-gray-400 font-medium text-sm mt-2 block">Please use the download button instead.</span></p>'; };
+            img.src = url;
+        } 
+        // 2. PDF Preview
+        else if (ext === 'pdf') {
+            body.innerHTML = `<iframe src="${url}" class="w-full h-full rounded-xl border border-white/10 bg-white"></iframe>`;
+        } 
+        // 3. Documents (Doc, Excel) / Unknown Files
+        else {
+            body.innerHTML = `
+                <div class="text-center">
+                    <svg class="mx-auto mb-5 text-gray-500" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                    <p class="text-white font-bold text-xl mb-2">No Quick Preview Available</p>
+                    <p class="text-gray-400 text-sm mb-8 font-medium">This file format (.${ext}) cannot be previewed natively in the browser.</p>
+                    <a href="${url}" target="_blank" class="inline-flex items-center gap-3 bg-[#0A84FF] text-white hover:bg-[#0A84FF]/80 px-8 py-4 r-pill transition font-bold shadow-[0_10px_25px_rgba(10,132,255,0.3)]">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        Open / Download File
+                    </a>
+                </div>
+            `;
+        }
+    };
+
+    window.closeFilePreview = function() {
+        document.getElementById('file-preview-modal').classList.add('hidden');
+        document.getElementById('file-preview-body').innerHTML = ''; // Wipe DOM to free memory
+    };
+
+    window.renameFile = function(cat, fileId) {
+        if (isReadOnly) return;
+        const file = tempFiles[cat].find(f => f.id === fileId);
+        if (!file) return;
+
+        // Smart formatting: Extract extension so user only edits the name
+        let currentName = file.name;
+        let ext = '';
+        const lastDot = currentName.lastIndexOf('.');
+        
+        if (lastDot > 0) {
+            ext = currentName.substring(lastDot); // e.g. ".pdf"
+            currentName = currentName.substring(0, lastDot); // e.g. "Poster_Draft_1"
+        }
+
+        const newBaseName = prompt("Rename File (extension will be kept automatically):", currentName);
+        
+        // Ensure they actually typed something and didn't hit cancel
+        if (newBaseName !== null && newBaseName.trim() !== '') {
+            // Re-attach extension
+            const finalName = newBaseName.trim() + ext;
+            file.name = finalName;
+            
+            // Save state immediately
+            if (editingEventId) {
+                const ev = eventsData.find(e => e.id === editingEventId);
+                if (ev) { ev.files = JSON.parse(JSON.stringify(tempFiles)); saveLocal(); }
+            }
+            
+            // Re-render UI
+            updateFileListUI(cat);
+        }
+    };
+
 
     // ==============================================================
     // 8. EVENT MODAL LOGIC
@@ -2186,7 +2334,7 @@
             <div id="form-tab-files" class="hidden space-y-8">
                 <div>
                     <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Event Notes</label>
-                    <textarea id="form-notes" ${disabledAttr} onchange="autoSaveNotes(this.value)" class="w-full p-5 h-40 text-base r-btn ${roClass}" placeholder="Add specific notes, gate codes, or reminders here...">${data.notes||''}</textarea>
+                    <textarea id="form-notes" ${disabledAttr} onchange="autoSaveNotes(this.value)" class="w-full p-5 min-h-[300px] text-base r-btn ${roClass} resize-y" placeholder="Add specific notes, gate codes, or reminders here...">${data.notes||''}</textarea>
                 </div>
                 <div class="border-t border-white/10 pt-8">
                       <label class="text-base font-bold text-white mb-6 block">Attachments</label>
