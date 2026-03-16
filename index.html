@@ -721,7 +721,13 @@
     let appIconImage = localStorage.getItem('arts_app_icon') || '';
     let masterPasswordHash = ''; 
     let isUnlocked = false;
-    let syncSafe = false; // SAFEGUARD: Forbids uploading to Supabase if data hasn't successfully downloaded
+    
+    // Safety & Race Condition Locks
+    let syncSafe = false; 
+    let isSyncing = false;
+    let needsSync = false;
+    let localVersion = 0; // Incremented on every local change to invalidate in-flight fetches
+    let syncInterval = null;
     
     const DEFAULT_BUDGET_MONTHS = [
         { name: "July", allocated: 0 }, { name: "August", allocated: 13000 }, { name: "September", allocated: 5600 },
@@ -748,8 +754,6 @@
     let expensesData = [];
     let budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
 
-    let isSyncing = false;
-    let syncInterval = null;
     let editingEventId = null; 
     let tempFiles = {}; 
     let currentView = 'events';
@@ -1751,10 +1755,22 @@
         } catch (e) { console.log("Init Master Check Failed"); }
     }
     
+    function saveLocal(triggerSync = true) {
+        localVersion++; // Invalidates any network payloads that are currently downloading!
+        localStorage.setItem('arts_current_year', currentYear);
+        localStorage.setItem('arts_app_bg', appBackgroundImage);
+        localStorage.setItem('arts_app_icon', appIconImage);
+        if (triggerSync) syncToCloud();
+    }
+
     async function syncToCloud() {
         if (!SUPABASE_URL || isReadOnly) return;
         if (!syncSafe) return; // SAFEGUARD: Prevent accidental data wipes
-        if (isSyncing) return; // Prevent overlapping syncs
+        
+        if (isSyncing) {
+            needsSync = true; // Queue the upload to run as soon as current sync finishes
+            return; 
+        }
         
         isSyncing = true; updateSyncUI();
         
@@ -1778,12 +1794,24 @@
                 settings: { availableYears: availableYears, masterPasswordHash: masterPasswordHash }
             });
         } catch (e) { console.error("Sync Error", e); } 
-        finally { setTimeout(() => { isSyncing = false; updateSyncUI(); }, 1000); }
+        finally { 
+            isSyncing = false;
+            // If another change happened while we were uploading, immediately sync again!
+            if (needsSync) {
+                needsSync = false;
+                syncToCloud();
+            } else {
+                updateSyncUI(); 
+            }
+        }
     }
 
     async function loadFromCloud(force = false) {
         if (!SUPABASE_URL || isReadOnly) return;
         if (isSyncing && !force) return;
+
+        // Remember the local version when we *started* asking the server
+        const fetchVersion = localVersion;
 
         try {
             const { data: indexData } = await _supabase.from('app_state').select('settings').eq('id', 'master_index').single();
@@ -1810,6 +1838,11 @@
             
             // Download succeeded or returned nothing gracefully! Mark as safe to sync.
             syncSafe = true; 
+            
+            // RACE CONDITION GUARD: If you clicked a button while we were downloading, discard the old server data!
+            if (fetchVersion !== localVersion) {
+                return; 
+            }
             
             // Ensure user hasn't switched years again while we were downloading
             if (data && currentYear === targetYear) {
@@ -1856,13 +1889,6 @@
             console.error("Load Error", e); 
             if (force) alert("Network interrupted. Please refresh the page to see your data.");
         }
-    }
-
-    function saveLocal(triggerSync = true) {
-        localStorage.setItem('arts_current_year', currentYear);
-        localStorage.setItem('arts_app_bg', appBackgroundImage);
-        localStorage.setItem('arts_app_icon', appIconImage);
-        if (triggerSync) syncToCloud();
     }
 
     // ==============================================================
