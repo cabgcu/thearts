@@ -533,15 +533,32 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="addExpense()" class="w-full mt-8 bg-white/10 border border-white/20 text-white py-4 r-btn font-bold hover:bg-white/20 transition text-lg shadow-lg outline-none">
-                    Submit Expense
-                </button>
+                <div class="flex gap-3 mt-8">
+                    <button id="btn-submit-expense" onclick="saveExpense()" class="flex-1 bg-white/10 border border-white/20 text-white py-4 r-btn font-bold hover:bg-white/20 transition text-lg shadow-lg outline-none">
+                        Submit Expense
+                    </button>
+                    <button id="btn-cancel-expense" onclick="cancelEditExpense()" class="hidden bg-[#FF3B30]/10 border border-[#FF3B30]/30 text-[#FF3B30] px-6 py-4 r-btn font-bold hover:bg-[#FF3B30]/20 transition text-lg shadow-lg outline-none">
+                        Cancel
+                    </button>
+                </div>
             </div>
 
             <!-- 4. Recent Expenses List -->
             <div class="frosted r-card flex flex-col h-[500px] lg:h-[600px]" id="expenses-list-card">
-                <div class="p-6 border-b border-white/10">
+                <div class="p-6 border-b border-white/10 flex justify-between items-center">
                     <h3 class="font-bold text-xl">Recent Expenses</h3>
+                    <div class="flex gap-2">
+                        <button onclick="deleteAllExpenses()" class="text-[10px] font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-1.5 r-pill border border-[#FF3B30]/30 hover:bg-[#FF3B30]/20 transition uppercase tracking-wider flex items-center gap-1 sm:gap-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <span class="hidden sm:inline">Delete All</span>
+                        </button>
+                        <label class="cursor-pointer text-[10px] font-bold text-[#0A84FF] bg-[#0A84FF]/10 px-3 py-1.5 r-pill border border-[#0A84FF]/30 hover:bg-[#0A84FF]/20 transition uppercase tracking-wider flex items-center gap-1 sm:gap-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            <span class="hidden sm:inline">Import CSV</span>
+                            <span class="sm:hidden">Import</span>
+                            <input type="file" accept=".csv" class="hidden" onchange="importExpensesCSV(event)">
+                        </label>
+                    </div>
                 </div>
                 <div class="overflow-y-auto flex-1 p-5 space-y-4" id="expenses-list">
                     <!-- Expenses list injected here -->
@@ -755,6 +772,7 @@
     let budgetData = JSON.parse(JSON.stringify(DEFAULT_BUDGET_MONTHS));
 
     let editingEventId = null; 
+    let editingExpenseId = null; 
     let tempFiles = {}; 
     let currentView = 'events';
     let isReadOnly = false;
@@ -1428,7 +1446,44 @@
         }
     };
 
-    window.addExpense = function() {
+    window.editExpense = function(id) {
+        if (isReadOnly) return;
+        const exp = expensesData.find(e => e.id === id);
+        if (!exp) return;
+
+        document.getElementById('exp-name').value = exp.name || '';
+        document.getElementById('exp-cost').value = exp.cost || '';
+        document.getElementById('exp-date').value = exp.date || '';
+        document.getElementById('exp-month').value = exp.month || '';
+        document.getElementById('exp-category').value = exp.category || 'General';
+        document.getElementById('exp-event').value = exp.eventId || '';
+
+        editingExpenseId = id;
+        
+        const btnSubmit = document.getElementById('btn-submit-expense');
+        btnSubmit.innerText = 'Update Expense';
+        btnSubmit.classList.remove('bg-white/10', 'border-white/20', 'text-white');
+        btnSubmit.classList.add('bg-[#0A84FF]/20', 'border-[#0A84FF]/50', 'text-[#0A84FF]');
+        
+        document.getElementById('btn-cancel-expense').classList.remove('hidden');
+        document.getElementById('expense-form-card').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.cancelEditExpense = function() {
+        editingExpenseId = null;
+        document.getElementById('exp-name').value = '';
+        document.getElementById('exp-cost').value = '';
+        document.getElementById('exp-date').value = '';
+        
+        const btnSubmit = document.getElementById('btn-submit-expense');
+        btnSubmit.innerText = 'Submit Expense';
+        btnSubmit.classList.remove('bg-[#0A84FF]/20', 'border-[#0A84FF]/50', 'text-[#0A84FF]');
+        btnSubmit.classList.add('bg-white/10', 'border-white/20', 'text-white');
+        
+        document.getElementById('btn-cancel-expense').classList.add('hidden');
+    };
+
+    window.saveExpense = function() {
         if (isReadOnly) return;
         const name = document.getElementById('exp-name').value;
         const cost = document.getElementById('exp-cost').value;
@@ -1439,10 +1494,18 @@
 
         if (!name || !cost) return alert("Please enter Name and Cost");
 
-        expensesData.push({ id: 'exp_' + Date.now(), name, cost, date, month, eventId, category });
-        saveLocal(); renderBudgetView();
-        
-        document.getElementById('exp-name').value = ''; document.getElementById('exp-cost').value = '';
+        if (editingExpenseId) {
+            const idx = expensesData.findIndex(e => e.id === editingExpenseId);
+            if (idx !== -1) {
+                expensesData[idx] = { ...expensesData[idx], name, cost: Number(cost), date, month, eventId, category };
+            }
+        } else {
+            expensesData.push({ id: 'exp_' + Date.now(), name, cost: Number(cost), date, month, eventId, category });
+        }
+
+        saveLocal(); 
+        renderBudgetView();
+        cancelEditExpense(); 
     };
 
     window.deleteExpense = function(id) {
@@ -1450,6 +1513,204 @@
         if(!confirm("Permanently delete this expense?")) return;
         expensesData = expensesData.filter(e => e.id !== id);
         saveLocal(); renderBudgetView();
+    };
+
+    window.deleteAllExpenses = function() {
+        if (isReadOnly) return;
+        if(!confirm("Are you sure you want to permanently delete ALL expenses? This cannot be undone.")) return;
+        expensesData = [];
+        saveLocal(); 
+        renderBudgetView();
+    };
+
+    function parseCSV(str) {
+        let arr = [];
+        let quote = false;
+        let row = [];
+        let col = "";
+        for (let c = 0; c < str.length; c++) {
+            let cc = str[c], nc = str[c+1];
+            if (cc === '"' && quote && nc === '"') { col += cc; ++c; continue; }
+            if (cc === '"') { quote = !quote; continue; }
+            if (cc === ',' && !quote) { row.push(col.trim()); col = ""; continue; }
+            if (cc === '\n' && !quote) {
+                if (col.endsWith('\r')) col = col.slice(0, -1);
+                row.push(col.trim()); 
+                if (row.some(x => x)) arr.push(row); 
+                row = []; col = ""; continue; 
+            }
+            col += cc;
+        }
+        if (col.endsWith('\r')) col = col.slice(0, -1);
+        row.push(col.trim());
+        if(row.length > 0 && row.some(x => x)) arr.push(row);
+        return arr;
+    }
+
+    window.importExpensesCSV = function(e) {
+        if (isReadOnly) return;
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const text = event.target.result;
+            const rows = parseCSV(text);
+            if (rows.length < 2) return alert("File appears empty or invalid.");
+
+            // Map standard months
+            const monthMap = {
+                'july': 'July', 'august': 'August', 'aug': 'August', 'september': 'September', 'sep': 'September',
+                'oct': 'October', 'october': 'October', 'nov': 'November', 'november': 'November', 'dec': 'December', 'december': 'December',
+                'jan': 'January', 'january': 'January', 'feb': 'February', 'february': 'February', 'mar': 'March', 'march': 'March',
+                'apr': 'April', 'april': 'April', 'may': 'May', 'jun': 'June', 'june': 'June'
+            };
+
+            let nameIdx = -1;
+            let purposeIdx = -1;
+            let monthCols = {}; // colIdx -> 'July'
+            let firstDataRow = -1;
+
+            // 1. Scan the top 10 rows to find our column definitions (handles merged/multi-line headers)
+            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                const row = rows[i];
+                for (let c = 0; c < row.length; c++) {
+                    const cell = (row[c] || '').toLowerCase().trim();
+                    if (!cell) continue;
+
+                    if (cell === 'name' && nameIdx === -1) nameIdx = c;
+                    if ((cell === 'purpose' || cell === 'description') && purposeIdx === -1) purposeIdx = c;
+                    
+                    if (monthMap[cell] && !monthCols[c]) {
+                        monthCols[c] = monthMap[cell];
+                    }
+                }
+                
+                // If we've found our core columns, mark the next row as the start of the data
+                if (nameIdx !== -1 && Object.keys(monthCols).length > 0 && firstDataRow === -1) {
+                    firstDataRow = i + 1; 
+                }
+            }
+
+            // Fallbacks in case the literal words 'Name' or 'Purpose' weren't found
+            if (nameIdx === -1) nameIdx = 0;
+            if (purposeIdx === -1) purposeIdx = 1;
+            if (firstDataRow === -1) firstDataRow = 2; // Usually safe fallback
+
+            if (Object.keys(monthCols).length === 0) {
+                e.target.value = '';
+                return alert("Could not identify any month columns (July, August, etc.) in the top rows.");
+            }
+
+            let importedCount = 0;
+
+            // 2. Process Data Rows
+            for (let i = firstDataRow; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+                
+                let baseName = nameIdx < row.length ? (row[nameIdx] || '').trim() : '';
+                let purpose = purposeIdx < row.length ? (row[purposeIdx] || '').trim() : '';
+                
+                // Skip rows that look like duplicate headers, subtotals, or monthly sums/culture
+                const combinedRowLower = (baseName + ' ' + purpose).toLowerCase();
+                if (combinedRowLower.includes('total') || 
+                    combinedRowLower.includes('monthly sum') || 
+                    combinedRowLower.includes('6545') || 
+                    combinedRowLower.includes('campus culture') ||
+                    baseName.toLowerCase() === 'name') {
+                    continue;
+                }
+
+                if (!baseName && !purpose) continue; // Skip entirely empty identifying rows
+
+                // Use Purpose as the main expense name (ignore 'Name' column if it's just an employee name)
+                let expName = purpose || baseName || "Imported Expense";
+
+                // Auto-detect Food Category based on keywords
+                let assignedCategory = 'General';
+                const lowerExpName = expName.toLowerCase();
+                if (lowerExpName.includes('sodexo') || lowerExpName.includes('costco') || lowerExpName.includes('eegee')) {
+                    assignedCategory = 'Food';
+                }
+
+                // Try to match the 'Purpose' to an existing event in the system
+                let matchedEventId = '';
+                if (expName) {
+                    // Normalize strings for aggressive fuzzy matching (handles aliases, '&', 'and', spaces, punctuation)
+                    const normalize = (str) => {
+                        let s = str.toLowerCase();
+                        // Alias dictionary for specific events
+                        s = s.replace(/bob ross/g, 'happylittlepaintparty');
+                        s = s.replace(/eggos/g, 'eggo');
+                        s = s.replace(/legos/g, 'lego');
+                        
+                        // Standardize ampersands to "and" before stripping spaces
+                        s = s.replace(/&/g, 'and');
+                        
+                        return s.replace(/[^a-z0-9]/g, '');
+                    };
+                    const normExpName = normalize(expName);
+
+                    // Sort events by length descending to match the most specific event names first
+                    const sortedEvents = [...eventsData].sort((a, b) => b.name.length - a.name.length);
+                    // See if the imported purpose string contains any of our event names
+                    const match = sortedEvents.find(e => {
+                        const normEventName = normalize(e.name);
+                        // Prevent matching against ultra-short or empty names. 
+                        // Check both directions in case the spreadsheet is shorter than the event name, or vice versa.
+                        return normEventName.length > 2 && (normExpName.includes(normEventName) || normEventName.includes(normExpName));
+                    });
+                    if (match) {
+                        matchedEventId = match.id;
+                    }
+                }
+
+                // Check each month column for amounts
+                for (const idx in monthCols) {
+                    const monthName = monthCols[idx];
+                    let valStr = row[idx];
+                    if (!valStr) continue;
+                    
+                    // Clean value (remove $, commas, spaces, accounting parens, and any stray text)
+                    valStr = valStr.replace(/[$£€,\s()a-zA-Z]/g, ''); 
+                    let cost = parseFloat(valStr);
+
+                    if (!isNaN(cost) && cost > 0) {
+                        // Generate a generic date for this month based on the current active Fiscal Year
+                        let year = parseInt(currentYear.split('-')[0]); 
+                        const secondHalfMonths = ['January', 'February', 'March', 'April', 'May', 'June'];
+                        if (secondHalfMonths.includes(monthName)) {
+                            year = parseInt(currentYear.split('-')[1]) || (year + 1);
+                        }
+                        
+                        const monthNum = new Date(monthName + " 1, 2000").getMonth() + 1;
+                        const dateStr = `${year}-${String(monthNum).padStart(2, '0')}-01`;
+
+                        expensesData.push({
+                            id: 'exp_imp_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                            name: expName,
+                            cost: cost, // Always absolute positive cost
+                            date: dateStr,
+                            month: monthName,
+                            eventId: matchedEventId, // Links to event if match found, else generic
+                            category: assignedCategory
+                        });
+                        importedCount++;
+                    }
+                }
+            }
+
+            if (importedCount > 0) {
+                saveLocal();
+                renderBudgetView();
+                alert(`Successfully imported ${importedCount} expenses!`);
+            } else {
+                alert("No valid expense amounts found in the file. Check your spreadsheet formatting.");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ''; // Reset input
     };
 
     window.updateAttendance = function(eventId, val) {
@@ -1518,13 +1779,18 @@
             const div = document.createElement('div');
             div.className = "bg-black/20 p-5 r-card border border-white/10 flex justify-between items-center";
             div.innerHTML = `
-                <div>
-                    <div class="font-bold text-white text-base mb-1.5">${exp.name}</div>
-                    <div class="text-[10px] text-gray-400 font-bold tracking-wider uppercase">${exp.date} • ${evName} • ${exp.month}</div>
+                <div class="flex-1 min-w-0 pr-4">
+                    <div class="font-bold text-white text-base mb-1.5 truncate" title="${exp.name}">${exp.name}</div>
+                    <div class="text-[10px] text-gray-400 font-bold tracking-wider uppercase truncate" title="${exp.date || '-'} • ${evName} • ${exp.month} • ${exp.category || 'General'}">
+                        ${exp.date || '-'} • ${evName} • ${exp.month} • ${exp.category || 'General'}
+                    </div>
                 </div>
-                <div class="text-right">
-                    <div class="font-mono font-bold text-white text-lg">$${Number(exp.cost).toFixed(2)}</div>
-                    ${!isReadOnly ? `<button onclick="deleteExpense('${exp.id}')" class="text-[#FF3B30] hover:text-white text-[10px] uppercase tracking-wider font-bold bg-transparent border-none cursor-pointer mt-1">Delete</button>` : ''}
+                <div class="text-right flex-shrink-0">
+                    <div class="font-mono font-bold text-white text-lg">$${Number(exp.cost).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                    <div class="flex justify-end gap-3 mt-1">
+                        ${!isReadOnly ? `<button onclick="editExpense('${exp.id}')" class="text-[#0A84FF] hover:text-white text-[10px] uppercase tracking-wider font-bold bg-transparent border-none cursor-pointer">Edit</button>` : ''}
+                        ${!isReadOnly ? `<button onclick="deleteExpense('${exp.id}')" class="text-[#FF3B30] hover:text-white text-[10px] uppercase tracking-wider font-bold bg-transparent border-none cursor-pointer">Delete</button>` : ''}
+                    </div>
                 </div>
             `;
             expList.appendChild(div);
